@@ -1,0 +1,3 @@
+A treasure trove of data science recipes that help students achieve operational excellence, and develop competitive edge in the private equity industry.
+
+Whether they collect it themselves or acquire it from external sources, the amount of data available to private equity firms today is increasing exponentially. And firms that choose not to use data science data to create value risk hastening their own obsolescence or, at the very least, losing competitive advantage.

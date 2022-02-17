@@ -1,0 +1,399 @@
+701;BarChart;Trend Spotter;=RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",1,">Composite Indicators",">TrendSpotter",,,,,3)
+702;BarChart;Overall Average;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Overall Average:"),"% ","~")
+703;BarChart;Short Term Indicators Average;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Short Term Indicators Average:"),"% ","~")
+704;BarChart;7 Day Average Directional Indicator;http://www.barchart.com/opinions/~~~~~;1;7 Day Average Directional Indicator; ; ; ;0;0;3;0
+705;BarChart;10 - 8 Day Moving Average Hilo Channel;http://www.barchart.com/opinions/~~~~~;1;10 - 8 Day Moving Average Hilo Channel; ; ; ;0;0;3;0
+706;BarChart;20 Day Moving Average vs Price;http://www.barchart.com/opinions/~~~~~;1;20 Day Moving Average Vs Price; ; ; ;0;0;3;0
+707;BarChart;20 - 50 Day MACD Oscillator;http://www.barchart.com/opinions/~~~~~;1;20 - 50 Day Macd Oscillator; ; ; ;0;0;3;0
+708;BarChart;20 Day Bollinger Bands;http://www.barchart.com/opinions/~~~~~;1;20 Day Bollinger Bands; ; ; ;0;0;3;0
+709;BarChart;Medium Term Indicators Average;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Medium Term Indicators Average:"),"% ","~")
+710;BarChart;40 Day Commodity Channel Index;http://www.barchart.com/opinions/~~~~~;1;40 Day Commodity Channel Index; ; ; ;0;0;3;0
+711;BarChart;50 Day Moving Average vs Price;http://www.barchart.com/opinions/~~~~~;1;50 Day Moving Average Vs Price; ; ; ;0;0;3;0
+712;BarChart;20 - 100 Day MACD Oscillator;http://www.barchart.com/opinions/~~~~~;1;20 - 100 Day Macd Oscillator; ; ; ;0;0;3;0
+713;BarChart;50 Day Parabolic Time/Price;http://www.barchart.com/opinions/~~~~~;1;50 Day Parabolic Time/Price; ; ; ;0;0;3;0
+714;BarChart;60 Day Commodity Channel Index;http://www.barchart.com/opinions/~~~~~;1;60 Day Commodity Channel Index; ; ; ;0;0;3;0
+715;BarChart;Long Term Indicators Average;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Long Term Indicators Average:"),"% ","~")
+716;BarChart;100 Day Moving Average vs Price;http://www.barchart.com/opinions/~~~~~;1;100 Day Moving Average Vs Price; ; ; ;0;0;3;0
+717;BarChart;50 - 100 Day MACD Oscillator;http://www.barchart.com/opinions/~~~~~;1;50 - 100 Day Macd Oscillator; ; ; ;0;0;3;0
+718;BarChart;Short Term Indicators Average %;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Short Term Indicators Average:"),": "," ")
+719;BarChart;Medium Term Indicators Average %;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Medium Term Indicators Average:"),": "," ")
+720;BarChart;Long Term Indicators Average %;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Long Term Indicators Average:"),": "," ")
+721;BarChart;Overall Average %;=smfstrExtr(RCHGetTableCell("http://www.barchart.com/opinions/~~~~~",0,"Overall Average:"),": "," ")
+
+783;StockScores;Mid Term Moving Average Crossover ;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Mid Term  Moving"))
+784;StockScores;Long Term Moving Average Crossover ;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Long Term  Moving"))
+785;StockScores;20 Day Avg Vol;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"20 Day Avg Vol")
+786;StockScores;150 Day Avg Vol;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"150 Day Avg Vol")
+787;StockScores;10 day Gain/Loss;="Obsolete"
+788;StockScores;10 Day Volatility;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"10 Day Volatility"))
+789;StockScores;15 Day Resistance;="Obsolete"
+790;StockScores;15 Day Support;="Obsolete"
+791;StockScores;20 Day Volatility;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"20 Day Volatility"))
+792;StockScores;200 day Gain/Loss;="Obsolete"
+793;StockScores;30 day Gain/Loss;="Obsolete"
+794;StockScores;40 Day Volatility;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"40 Day Volatility"))
+795;StockScores;5 Day Resistance;="Obsolete"
+796;StockScores;5 Day Support;="Obsolete"
+797;StockScores;60 day Gain/Loss;="Obsolete"
+798;StockScores;80 Day Resistance;="Obsolete"
+799;StockScores;80 Day Support;="Obsolete"
+800;StockScores;Abnormal Volatility;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Abnormal Activity"))
+801;StockScores;Long Term Consolidation;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Consolidations","Long Term"))
+802;StockScores;MACD;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Momentum Indicators","MACD"))
+803;StockScores;Medium Term Consolidation;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Consolidations","Medium Term"))
+804;StockScores;Momentum -- 10 Day Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Momentum Indicators","10 Day Trend"))
+805;StockScores;Momentum -- 100 Day Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Momentum Indicators","100 Day Trend"))
+806;StockScores;Momentum -- 40 Day Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Momentum Indicators","45 Day Trend"))
+807;StockScores;Pivot -- Day Resistance 1;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Day Resistance 1")
+808;StockScores;Pivot -- Day Resistance 2;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Day Resistance 2")
+809;StockScores;Pivot -- Day Support 1;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Day Support 1")
+810;StockScores;Pivot -- Day Support 2;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Day Support 2")
+811;StockScores;Price Indicator -- 100 Day Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Moving Average/Vol","100 Day Trend"))
+812;StockScores;Price Indicator -- 15 Day Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Moving Average/Vol","15 Day Trend"))
+813;StockScores;Price Indicator -- 45 Day Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Moving Average/Vol","45 Day Trend"))
+814;StockScores;Price Pivot;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Price Pivot")
+815;StockScores;Price Relativity -- From 150 Day High;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"From 150 Day High")
+816;StockScores;Price Relativity -- From 150 Day Low;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"From 150 Day Low")
+817;StockScores;Price Relativity -- From 40 Day High;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"From 40 Day High")
+818;StockScores;Price Relativity -- From 40 Day Low;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"From 40 Day Low")
+819;StockScores;Price Relativity -- From 80 Day High;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"From 80 Day High")
+820;StockScores;Price Relativity -- From 80 Day Low;=RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"From 80 Day Low")
+821;StockScores;Rating;="Obsolete"
+822;StockScores;RSI;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Momentum Indicators","RSI"))
+823;StockScores;Short Term Consolidation;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Consolidations","Short Term"))
+824;StockScores;Sentiment Stock Score;=0+smfGetTagContent("http://www.stockscores.com/quickreport.asp?ticker=~~~~~","b",2,">Sentiment Stockscore")
+825;StockScores;Stochastics;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Momentum Indicators","Stochastics"))
+826;StockScores;Signal Stock Score;=0+smfGetTagContent("http://www.stockscores.com/quickreport.asp?ticker=~~~~~","b",2,">Signal Stockscore")
+827;StockScores;Today's Trading -- Abnormal Trades;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Abnormal Activity"))
+828;StockScores;Today's Trading -- Abnormal Volume;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Abnormal Volume"))
+829;StockScores;Today's Trading -- Candle;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,">Candle"))
+830;StockScores;Today's Trading -- Gap;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,">Gap"))
+831;StockScores;Today's Volume vs 150 Day Average of Volume;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Today / 150 Day"))
+832;StockScores;Today's Volume vs 20 Day Average of Volume;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Today / 20 Day"))
+833;StockScores;Volatility Index Today;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Volatility Index Today"))
+834;StockScores;Volatility Index Yesterday;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Volatility Index Yesterday"))
+835;StockScores;Volume Price Trend;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"Volume Price Trend"))
+836;StockScores;William Volume Accumulation;=PROPER(RCHGetTableCell("http://www.stockscores.com/quickreport.asp?ticker=~~~~~",1,"William Volume"))
+
+994;ETFOutlookHL;Description;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;-11;>~~~~~<; ; ; ;0;</table;0;0
+995;ETFOutlookHL;New Highs %;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;1;>~~~~~<; ; ; ;0;</table;0;0
+996;ETFOutlookHL;New Lows %;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;2;>~~~~~<; ; ; ;0;</table;0;0
+997;ETFOutlookHL;Net New Highs %;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;3;>~~~~~<; ; ; ;0;</table;0;0
+998;ETFOutlookHL;NHNL 5 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;4;>~~~~~<; ; ; ;0;</table;0;0
+999;ETFOutlookHL;NHNL 10 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;5;>~~~~~<; ; ; ;0;</table;0;0
+1000;ETFOutlookHL;NHNL 20 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;6;>~~~~~<; ; ; ;0;</table;0;0
+1001;ETFOutlookHL;NHNL 60 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;7;>~~~~~<; ; ; ;0;</table;0;0
+1002;ETFOutlookHL;NHNL 120 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;8;>~~~~~<; ; ; ;0;</table;0;0
+1003;ETFOutlookHL;NHNL 250 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_new_highs_lows_avg_d.php;9;>~~~~~<; ; ; ;0;</table;0;0
+1004;ETFOutlookPB;Price - Advances %;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;1;>~~~~~<; ; ; ;0;</table;0;0
+1005;ETFOutlookPB;Price - Declines %;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;2;>~~~~~<; ; ; ;0;</table;0;0
+1006;ETFOutlookPB;Price - AD Net %;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;3;>~~~~~<; ; ; ;0;</table;0;0
+1007;ETFOutlookPB;Price - AD 5 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;4;>~~~~~<; ; ; ;0;</table;0;0
+1008;ETFOutlookPB;Price - AD 10 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;5;>~~~~~<; ; ; ;0;</table;0;0
+1009;ETFOutlookPB;Price - AD 20 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;6;>~~~~~<; ; ; ;0;</table;0;0
+1010;ETFOutlookPB;Price - AD 60 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;7;>~~~~~<; ; ; ;0;</table;0;0
+1011;ETFOutlookPB;Price - AD 120 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;8;>~~~~~<; ; ; ;0;</table;0;0
+1012;ETFOutlookPB;Price - AD 250 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_avg_d.php;9;>~~~~~<; ; ; ;0;</table;0;0
+1013;ETFOutlookVB;Volume - Advances %;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;1;>~~~~~<; ; ; ;0;</table;0;0
+1014;ETFOutlookVB;Volume - Declines %;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;2;>~~~~~<; ; ; ;0;</table;0;0
+1015;ETFOutlookVB;Volume - AD Net %;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;3;>~~~~~<; ; ; ;0;</table;0;0
+1016;ETFOutlookVB;Volume - AD 5 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;4;>~~~~~<; ; ; ;0;</table;0;0
+1017;ETFOutlookVB;Volume - AD 10 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;5;>~~~~~<; ; ; ;0;</table;0;0
+1018;ETFOutlookVB;Volume - AD 20 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;6;>~~~~~<; ; ; ;0;</table;0;0
+1019;ETFOutlookVB;Volume - AD 60 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;7;>~~~~~<; ; ; ;0;</table;0;0
+1020;ETFOutlookVB;Volume - AD 120 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;8;>~~~~~<; ; ; ;0;</table;0;0
+1021;ETFOutlookVB;Volume - AD 250 day SMA;http://www.etfinvestmentoutlook.com/rank_breadth_volume_avg_d.php;9;>~~~~~<; ; ; ;0;</table;0;0
+1022;ETFOutlookMB;Price - McClellan Oscillator;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_d.php;4;>~~~~~<; ; ; ;0;</table;0;0
+1023;ETFOutlookMB;Price - Oscillator Change;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_d.php;5;>~~~~~<; ; ; ;0;</table;0;0
+1024;ETFOutlookMB;Price - Oscillator Alert;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_d.php;6;>~~~~~<; ; ; ;0;</table;0;0
+1025;ETFOutlookMB;Price - McClellan Summation;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_d.php;7;>~~~~~<; ; ; ;0;</table;0;0
+1026;ETFOutlookMB;Price - Summation Alert;http://www.etfinvestmentoutlook.com/rank_breadth_advance_decline_d.php;8;>~~~~~<; ; ; ;0;</table;0;0
+1027;ETFOutlookMV;Volume - McClellan Oscillator ;http://www.etfinvestmentoutlook.com/rank_breadth_volume_d.php;4;>~~~~~<; ; ; ;0;</table;0;0
+1028;ETFOutlookMV;Volume - Oscillator Change ;http://www.etfinvestmentoutlook.com/rank_breadth_volume_d.php;5;>~~~~~<; ; ; ;0;</table;0;0
+1029;ETFOutlookMV;Volume - Oscillator Alert ;http://www.etfinvestmentoutlook.com/rank_breadth_volume_d.php;6;>~~~~~<; ; ; ;0;</table;0;0
+1030;ETFOutlookMV;Volume - McClellan Summation ;http://www.etfinvestmentoutlook.com/rank_breadth_volume_d.php;7;>~~~~~<; ; ; ;0;</table;0;0
+1031;ETFOutlookMV;Volume - Summation Alert;http://www.etfinvestmentoutlook.com/rank_breadth_volume_d.php;8;>~~~~~<; ; ; ;0;</table;0;0
+
+1032;ETFScreen;RSf - Date - Month 1;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;1;>Symbol; ; ; ;0;</table;0;0
+1033;ETFScreen;RSf - Date - Month 2;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;2;>Symbol; ; ; ;0;</table;0;0
+1034;ETFScreen;RSf - Date - Month 3;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;3;>Symbol; ; ; ;0;</table;0;0
+1035;ETFScreen;RSf - Date - Month 4;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;4;>Symbol; ; ; ;0;</table;0;0
+1036;ETFScreen;RSf - Date - Month 5;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;5;>Symbol; ; ; ;0;</table;0;0
+1037;ETFScreen;RSf - Date - Month 6;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;6;>Symbol; ; ; ;0;</table;0;0
+1038;ETFScreen;RSf - Date - Month 7;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;7;>Symbol; ; ; ;0;</table;0;0
+1039;ETFScreen;RSf - Date - Month 8;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;8;>Symbol; ; ; ;0;</table;0;0
+1040;ETFScreen;RSf - Date - Month 9;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;9;>Symbol; ; ; ;0;</table;0;0
+1041;ETFScreen;RSf - Date - Month 10;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;10;>Symbol; ; ; ;0;</table;0;0
+1042;ETFScreen;RSf - Date - Month 11;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;11;>Symbol; ; ; ;0;</table;0;0
+1043;ETFScreen;RSf - Date - Month 12;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;12;>Symbol; ; ; ;0;</table;0;0
+1044;ETFScreen;RSf - Date - Month 13;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;13;>Symbol; ; ; ;0;</table;0;0
+1045;ETFScreen;RSf - Date - Week 1;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;1;>Symbol; ; ; ;0;</table;0;0
+1046;ETFScreen;RSf - Date - Week 2;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;2;>Symbol; ; ; ;0;</table;0;0
+1047;ETFScreen;RSf - Date - Week 3;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;3;>Symbol; ; ; ;0;</table;0;0
+1048;ETFScreen;RSf - Date - Week 4;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;4;>Symbol; ; ; ;0;</table;0;0
+1049;ETFScreen;RSf - Date - Week 5;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;5;>Symbol; ; ; ;0;</table;0;0
+1050;ETFScreen;RSf - Date - Week 6;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;6;>Symbol; ; ; ;0;</table;0;0
+1051;ETFScreen;RSf - Date - Week 7;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;7;>Symbol; ; ; ;0;</table;0;0
+1052;ETFScreen;RSf - Date - Week 8;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;8;>Symbol; ; ; ;0;</table;0;0
+1053;ETFScreen;RSf - Date - Week 9;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;9;>Symbol; ; ; ;0;</table;0;0
+1054;ETFScreen;RSf - Date - Week 10;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;10;>Symbol; ; ; ;0;</table;0;0
+1055;ETFScreen;RSf - Date - Week 11;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;11;>Symbol; ; ; ;0;</table;0;0
+1056;ETFScreen;RSf - Date - Week 12;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;12;>Symbol; ; ; ;0;</table;0;0
+1057;ETFScreen;RSf - Date - Week 13;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;13;>Symbol; ; ; ;0;</table;0;0
+1058;ETFScreen;RSf - Month 1;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;1;>~~~~~<; ; ; ;0;</table;0;0
+1059;ETFScreen;RSf - Month 2;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;2;>~~~~~<; ; ; ;0;</table;0;0
+1060;ETFScreen;RSf - Month 3;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;3;>~~~~~<; ; ; ;0;</table;0;0
+1061;ETFScreen;RSf - Month 4;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;4;>~~~~~<; ; ; ;0;</table;0;0
+1062;ETFScreen;RSf - Month 5;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;5;>~~~~~<; ; ; ;0;</table;0;0
+1063;ETFScreen;RSf - Month 6;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;6;>~~~~~<; ; ; ;0;</table;0;0
+1064;ETFScreen;RSf - Month 7;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;7;>~~~~~<; ; ; ;0;</table;0;0
+1065;ETFScreen;RSf - Month 8;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;8;>~~~~~<; ; ; ;0;</table;0;0
+1066;ETFScreen;RSf - Month 9;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;9;>~~~~~<; ; ; ;0;</table;0;0
+1067;ETFScreen;RSf - Month 10;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;10;>~~~~~<; ; ; ;0;</table;0;0
+1068;ETFScreen;RSf - Month 11;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;11;>~~~~~<; ; ; ;0;</table;0;0
+1069;ETFScreen;RSf - Month 12;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;12;>~~~~~<; ; ; ;0;</table;0;0
+1070;ETFScreen;RSf - Month 13;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=1;13;>~~~~~<; ; ; ;0;</table;0;0
+1071;ETFScreen;RSf - Week 1;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;1;>~~~~~<; ; ; ;0;</table;0;0
+1072;ETFScreen;RSf - Week 2;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;2;>~~~~~<; ; ; ;0;</table;0;0
+1073;ETFScreen;RSf - Week 3;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;3;>~~~~~<; ; ; ;0;</table;0;0
+1074;ETFScreen;RSf - Week 4;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;4;>~~~~~<; ; ; ;0;</table;0;0
+1075;ETFScreen;RSf - Week 5;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;5;>~~~~~<; ; ; ;0;</table;0;0
+1076;ETFScreen;RSf - Week 6;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;6;>~~~~~<; ; ; ;0;</table;0;0
+1077;ETFScreen;RSf - Week 7;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;7;>~~~~~<; ; ; ;0;</table;0;0
+1078;ETFScreen;RSf - Week 8;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;8;>~~~~~<; ; ; ;0;</table;0;0
+1079;ETFScreen;RSf - Week 9;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;9;>~~~~~<; ; ; ;0;</table;0;0
+1080;ETFScreen;RSf - Week 10;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;10;>~~~~~<; ; ; ;0;</table;0;0
+1081;ETFScreen;RSf - Week 11;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;11;>~~~~~<; ; ; ;0;</table;0;0
+1082;ETFScreen;RSf - Week 12;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;12;>~~~~~<; ; ; ;0;</table;0;0
+1083;ETFScreen;RSf - Week 13;http://www.etfscreen.com/rsftrends.php?wl=0&s=default&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&d=i&rs=0;13;>~~~~~<; ; ; ;0;</table;0;0
+1084;ETFScreen;RSf - Current;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;1;>~~~~~<; ; ; ;0;</table;0;0
+1085;ETFScreen;Performance - 1 Day;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;2;>~~~~~<; ; ; ;0;</table;0;0
+1086;ETFScreen;Performance - 5 Day;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;3;>~~~~~<; ; ; ;0;</table;0;0
+1087;ETFScreen;Performance - 1 Month;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;4;>~~~~~<; ; ; ;0;</table;0;0
+1088;ETFScreen;Performance - 3 Month;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;5;>~~~~~<; ; ; ;0;</table;0;0
+1089;ETFScreen;Performance - 6 Month;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;6;>~~~~~<; ; ; ;0;</table;0;0
+1090;ETFScreen;Performance - 1 Year;http://www.etfscreen.com/etfperf.php?wl=0&s=Rtn-1d|desc&t=6&d=i&ftS=yes&ftL=yes&vFf=dolVol21&vFl=gt&vFv=0&udc=default&d=i;7;>~~~~~<; ; ; ;0;</table;0;0
+1146;BarChartMM;Market Momentum -- Date;=smfGetTagContent("http://www.barchart.com/stocks/momentum.php","span",-1,"dtaDate")
+1147;BarChartMM;NYSE -- Advancing Issues;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>Advancing Issues; ; ;0;</table;0;0
+1148;BarChartMM;NYSE -- Declining Issues;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>Declining Issues; ; ;0;</table;0;0
+1149;BarChartMM;NYSE -- Unchanged Issues;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>Unchanged Issues; ; ;0;</table;0;0
+1150;BarChartMM;NYSE -- Advancing Shares;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>Advancing Shares; ; ;0;</table;0;0
+1151;BarChartMM;NYSE -- Declining Shares;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>Declining Shares; ; ;0;</table;0;0
+1152;BarChartMM;NYSE -- Unchanged Shares;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>Unchanged Shares; ; ;0;</table;0;0
+1153;BarChartMM;NYSE -- New Highs;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>New Highs; ; ;0;</table;0;0
+1154;BarChartMM;NYSE -- New Lows;http://www.barchart.com/stocks/momentum.php;1;Advances/Declines/Unchanged;>New Lows; ; ;0;</table;0;0
+1155;BarChartMM;Nasdaq -- Advancing Issues;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>Advancing Issues; ; ;0;</table;0;0
+1156;BarChartMM;Nasdaq -- Declining Issues;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>Declining Issues; ; ;0;</table;0;0
+1157;BarChartMM;Nasdaq -- Unchanged Issues;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>Unchanged Issues; ; ;0;</table;0;0
+1158;BarChartMM;Nasdaq -- Advancing Shares;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>Advancing Shares; ; ;0;</table;0;0
+1159;BarChartMM;Nasdaq -- Declining Shares;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>Declining Shares; ; ;0;</table;0;0
+1160;BarChartMM;Nasdaq -- Unchanged Shares;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>Unchanged Shares; ; ;0;</table;0;0
+1161;BarChartMM;Nasdaq -- New Highs;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>New Highs; ; ;0;</table;0;0
+1162;BarChartMM;Nasdaq -- New Lows;http://www.barchart.com/stocks/momentum.php;2;Advances/Declines/Unchanged;>New Lows; ; ;0;</table;0;0
+1163;BarChartMM;AMEX -- Advancing Issues;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>Advancing Issues; ; ;0;</table;0;0
+1164;BarChartMM;AMEX -- Declining Issues;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>Declining Issues; ; ;0;</table;0;0
+1165;BarChartMM;AMEX -- Unchanged Issues;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>Unchanged Issues; ; ;0;</table;0;0
+1166;BarChartMM;AMEX -- Advancing Shares;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>Advancing Shares; ; ;0;</table;0;0
+1167;BarChartMM;AMEX -- Declining Shares;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>Declining Shares; ; ;0;</table;0;0
+1168;BarChartMM;AMEX -- Unchanged Shares;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>Unchanged Shares; ; ;0;</table;0;0
+1169;BarChartMM;AMEX -- New Highs;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>New Highs; ; ;0;</table;0;0
+1170;BarChartMM;AMEX -- New Lows;http://www.barchart.com/stocks/momentum.php;3;Advances/Declines/Unchanged;>New Lows; ; ;0;</table;0;0
+1171;BarChartMM;OTCBB -- Advancing Issues;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>Advancing Issues; ; ;0;</table;0;0
+1172;BarChartMM;OTCBB -- Declining Issues;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>Declining Issues; ; ;0;</table;0;0
+1173;BarChartMM;OTCBB -- Unchanged Issues;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>Unchanged Issues; ; ;0;</table;0;0
+1174;BarChartMM;OTCBB -- Advancing Shares;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>Advancing Shares; ; ;0;</table;0;0
+1175;BarChartMM;OTCBB -- Declining Shares;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>Declining Shares; ; ;0;</table;0;0
+1176;BarChartMM;OTCBB -- Unchanged Shares;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>Unchanged Shares; ; ;0;</table;0;0
+1177;BarChartMM;OTCBB -- New Highs;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>New Highs; ; ;0;</table;0;0
+1178;BarChartMM;OTCBB -- New Lows;http://www.barchart.com/stocks/momentum.php;4;Advances/Declines/Unchanged;>New Lows; ; ;0;</table;0;0
+1179;BarChartMM;Market Momentum -- Today;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Today; ; ;0;</table;0;0
+1180;BarChartMM;Market Momentum -- Yesterday;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Yesterday; ; ;0;</table;0;0
+1181;BarChartMM;Market Momentum -- Last Week;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Last Week; ; ;0;</table;0;0
+1182;BarChartMM;Market Momentum -- Last Month;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Last Month; ; ;0;</table;0;0
+1183;BarChartMM;Market -- Advancing Issues -- Today;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Today; ; ;0;</table;0;0
+1184;BarChartMM;Market -- Advancing Issues -- Yesterday;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Yesterday; ; ;0;</table;0;0
+1185;BarChartMM;Market -- Advancing Issues -- Last Week;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Last Week; ; ;0;</table;0;0
+1186;BarChartMM;Market -- Advancing Issues -- Last Month;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Last Month; ; ;0;</table;0;0
+1187;BarChartMM;Market -- Unchanged Issues -- Today;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Today; ; ;0;</table;0;0
+1188;BarChartMM;Market -- Unchanged Issues -- Yesterday;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Yesterday; ; ;0;</table;0;0
+1189;BarChartMM;Market -- Unchanged Issues -- Last Week;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Last Week; ; ;0;</table;0;0
+1190;BarChartMM;Market -- Unchanged Issues -- Last Month;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Last Month; ; ;0;</table;0;0
+1191;BarChartMM;Market -- Declining Issues -- Today;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Today; ; ;0;</table;0;0
+1192;BarChartMM;Market -- Declining Issues -- Yesterday;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Yesterday; ; ;0;</table;0;0
+1193;BarChartMM;Market -- Declining Issues -- Last Week;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Last Week; ; ;0;</table;0;0
+1194;BarChartMM;Market -- Declining Issues -- Last Month;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Last Month; ; ;0;</table;0;0
+
+1195;BarChartMM;Percent of Stocks Above 20-Day MA -- Today;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Today;>Today; ;0;</table;0;0
+1196;BarChartMM;Percent of Stocks Above 20-Day MA -- Yesterday;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Yesterday;>Yesterday; ;0;</table;0;0
+1197;BarChartMM;Percent of Stocks Above 20-Day MA -- Last Week;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Last Week;>Last Week; ;0;</table;0;0
+1198;BarChartMM;Percent of Stocks Above 20-Day MA -- Last Month;http://www.barchart.com/stocks/momentum.php;1;>Percentage of Stocks;>Last Month;>Last Month; ;0;</table;0;0
+1199;BarChartMM;Percent of Stocks Above 50-Day MA -- Today;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Today;>Today; ;0;</table;0;0
+1200;BarChartMM;Percent of Stocks Above 50-Day MA -- Yesterday;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Yesterday;>Yesterday; ;0;</table;0;0
+1201;BarChartMM;Percent of Stocks Above 50-Day MA -- Last Week;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Last Week;>Last Week; ;0;</table;0;0
+1202;BarChartMM;Percent of Stocks Above 50-Day MA -- Last Month;http://www.barchart.com/stocks/momentum.php;2;>Percentage of Stocks;>Last Month;>Last Month; ;0;</table;0;0
+1203;BarChartMM;Percent of Stocks Above 100-Day MA -- Today;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Today;>Today; ;0;</table;0;0
+1204;BarChartMM;Percent of Stocks Above 100-Day MA -- Yesterday;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Yesterday;>Yesterday; ;0;</table;0;0
+1205;BarChartMM;Percent of Stocks Above 100-Day MA -- Last Week;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Last Week;>Last Week; ;0;</table;0;0
+1206;BarChartMM;Percent of Stocks Above 100-Day MA -- Last Month;http://www.barchart.com/stocks/momentum.php;3;>Percentage of Stocks;>Last Month;>Last Month; ;0;</table;0;0
+1207;BarChartMM;Percent of Stocks Above 150-Day MA -- Today;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Today;>Today; ;0;</table;0;0
+1208;BarChartMM;Percent of Stocks Above 150-Day MA -- Yesterday;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Yesterday;>Yesterday; ;0;</table;0;0
+1209;BarChartMM;Percent of Stocks Above 150-Day MA -- Last Week;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Last Week;>Last Week; ;0;</table;0;0
+1210;BarChartMM;Percent of Stocks Above 150-Day MA -- Last Month;http://www.barchart.com/stocks/momentum.php;4;>Percentage of Stocks;>Last Month;>Last Month; ;0;</table;0;0
+1211;BarChartMM;Percent of Stocks Above 200-Day MA -- Today;http://www.barchart.com/stocks/momentum.php;5;>Percentage of Stocks;>Today;>Today; ;0;</table;0;0
+1212;BarChartMM;Percent of Stocks Above 200-Day MA -- Yesterday;http://www.barchart.com/stocks/momentum.php;5;>Percentage of Stocks;>Yesterday;>Yesterday; ;0;</table;0;0
+1213;BarChartMM;Percent of Stocks Above 200-Day MA -- Last Week;http://www.barchart.com/stocks/momentum.php;5;>Percentage of Stocks;>Last Week;>Last Week; ;0;</table;0;0
+1214;BarChartMM;Percent of Stocks Above 200-Day MA -- Last Month;http://www.barchart.com/stocks/momentum.php;5;>Percentage of Stocks;>Last Month;>Last Month; ;0;</table;0;0
+
+
+1215;BarChartTech;Group1 -- Period -- 1;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>; ; ;1;</TABLE;0;0
+1216;BarChartTech;Moving Average -- 1;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>; ; ;1;</TABLE;0;0
+1217;BarChartTech;Price Change -- 1;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>; ; ;1;</TABLE;0;0
+1218;BarChartTech;Percent Change -- 1;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>; ; ;1;</TABLE;0;0
+1219;BarChartTech;Average Volume -- 1;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>; ; ;1;</TABLE;0;0
+1220;BarChartTech;Group1 -- Period -- 2;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>; ; ;2;</TABLE;0;0
+1221;BarChartTech;Moving Average -- 2;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>; ; ;2;</TABLE;0;0
+1222;BarChartTech;Price Change -- 2;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>; ; ;2;</TABLE;0;0
+1223;BarChartTech;Percent Change -- 2;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>; ; ;2;</TABLE;0;0
+1224;BarChartTech;Average Volume -- 2;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>; ; ;2;</TABLE;0;0
+1225;BarChartTech;Group1 -- Period -- 3;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>; ; ;3;</TABLE;0;0
+1226;BarChartTech;Moving Average -- 3;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>; ; ;3;</TABLE;0;0
+1227;BarChartTech;Price Change -- 3;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>; ; ;3;</TABLE;0;0
+1228;BarChartTech;Percent Change -- 3;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>; ; ;3;</TABLE;0;0
+1229;BarChartTech;Average Volume -- 3;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>; ; ;3;</TABLE;0;0
+1230;BarChartTech;Group1 -- Period -- 4;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>; ; ;4;</TABLE;0;0
+1231;BarChartTech;Moving Average -- 4;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>; ; ;4;</TABLE;0;0
+1232;BarChartTech;Price Change -- 4;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>; ; ;4;</TABLE;0;0
+1233;BarChartTech;Percent Change -- 4;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>; ; ;4;</TABLE;0;0
+1234;BarChartTech;Average Volume -- 4;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>; ; ;4;</TABLE;0;0
+1235;BarChartTech;Group1 -- Period -- 5;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>; ; ;5;</TABLE;0;0
+1236;BarChartTech;Moving Average -- 5;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>; ; ;5;</TABLE;0;0
+1237;BarChartTech;Price Change -- 5;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>; ; ;5;</TABLE;0;0
+1238;BarChartTech;Percent Change -- 5;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>; ; ;5;</TABLE;0;0
+1239;BarChartTech;Average Volume -- 5;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>; ; ;5;</TABLE;0;0
+1240;BarChartTech;Group1 -- Period -- 6;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>; ; ;6;</TABLE;0;0
+1241;BarChartTech;Moving Average -- 6;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>; ; ;6;</TABLE;0;0
+1242;BarChartTech;Price Change -- 6;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>; ; ;6;</TABLE;0;0
+1243;BarChartTech;Percent Change -- 6;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>; ; ;6;</TABLE;0;0
+1244;BarChartTech;Average Volume -- 6;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>; ; ;6;</TABLE;0;0
+1245;BarChartTech;Group2 -- Period -- 1;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>; ;1;</TABLE;0;0
+1246;BarChartTech;Raw Stochastic -- 1;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>; ;1;</TABLE;0;0
+1247;BarChartTech;Stochastic %K -- 1;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>; ;1;</TABLE;0;0
+1248;BarChartTech;Stochastic %D -- 1;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>; ;1;</TABLE;0;0
+1249;BarChartTech;Average True Range -- 1;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>; ;1;</TABLE;0;0
+1250;BarChartTech;Group2 -- Period -- 2;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>; ;2;</TABLE;0;0
+1251;BarChartTech;Raw Stochastic -- 2;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>; ;2;</TABLE;0;0
+1252;BarChartTech;Stochastic %K -- 2;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>; ;2;</TABLE;0;0
+1253;BarChartTech;Stochastic %D -- 2;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>; ;2;</TABLE;0;0
+1254;BarChartTech;Average True Range -- 2;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>; ;2;</TABLE;0;0
+1255;BarChartTech;Group2 -- Period -- 3;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>; ;3;</TABLE;0;0
+1256;BarChartTech;Raw Stochastic -- 3;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>; ;3;</TABLE;0;0
+1257;BarChartTech;Stochastic %K -- 3;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>; ;3;</TABLE;0;0
+1258;BarChartTech;Stochastic %D -- 3;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>; ;3;</TABLE;0;0
+1259;BarChartTech;Average True Range -- 3;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>; ;3;</TABLE;0;0
+1260;BarChartTech;Group3 -- Period -- 1;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>PERIOD;>;1;</TABLE;0;0
+1261;BarChartTech;Relative Strength -- 1;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>PERIOD;>;1;</TABLE;0;0
+1262;BarChartTech;Percent R -- 1;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>PERIOD;>;1;</TABLE;0;0
+1263;BarChartTech;Historic Volatility -- 1;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>PERIOD;>;1;</TABLE;0;0
+1264;BarChartTech;MACD Oscillator -- 1;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>PERIOD;>;1;</TABLE;0;0
+1265;BarChartTech;Group3 -- Period -- 2;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>PERIOD;>;2;</TABLE;0;0
+1266;BarChartTech;Relative Strength -- 2;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>PERIOD;>;2;</TABLE;0;0
+1267;BarChartTech;Percent R -- 2;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>PERIOD;>;2;</TABLE;0;0
+1268;BarChartTech;Historic Volatility -- 2;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>PERIOD;>;2;</TABLE;0;0
+1269;BarChartTech;MACD Oscillator -- 2;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>PERIOD;>;2;</TABLE;0;0
+1270;BarChartTech;Group3 -- Period -- 3;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>PERIOD;>;3;</TABLE;0;0
+1271;BarChartTech;Relative Strength -- 3;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>PERIOD;>;3;</TABLE;0;0
+1272;BarChartTech;Percent R -- 3;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>PERIOD;>;3;</TABLE;0;0
+1273;BarChartTech;Historic Volatility -- 3;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>PERIOD;>;3;</TABLE;0;0
+1274;BarChartTech;MACD Oscillator -- 3;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>PERIOD;>;3;</TABLE;0;0
+1275;BarChartTech;Group3 -- Period -- 4;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>PERIOD;>;4;</TABLE;0;0
+1276;BarChartTech;Relative Strength -- 4;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>PERIOD;>;4;</TABLE;0;0
+1277;BarChartTech;Percent R -- 4;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>PERIOD;>;4;</TABLE;0;0
+1278;BarChartTech;Historic Volatility -- 4;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>PERIOD;>;4;</TABLE;0;0
+1279;BarChartTech;MACD Oscillator -- 4;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>PERIOD;>;4;</TABLE;0;0
+1280;BarChartTech;Group3 -- Period -- 5;http://www.barchart.com/technicals/~~~~~;1;>PERIOD;>PERIOD;>PERIOD;>;5;</TABLE;0;0
+1281;BarChartTech;Relative Strength -- 5;http://www.barchart.com/technicals/~~~~~;2;>PERIOD;>PERIOD;>PERIOD;>;5;</TABLE;0;0
+1282;BarChartTech;Percent R -- 5;http://www.barchart.com/technicals/~~~~~;3;>PERIOD;>PERIOD;>PERIOD;>;5;</TABLE;0;0
+1283;BarChartTech;Historic Volatility -- 5;http://www.barchart.com/technicals/~~~~~;4;>PERIOD;>PERIOD;>PERIOD;>;5;</TABLE;0;0
+1284;BarChartTech;MACD Oscillator -- 5;http://www.barchart.com/technicals/~~~~~;5;>PERIOD;>PERIOD;>PERIOD;>;5;</TABLE;0;0
+
+1513;StockCharts;P&F -- Pattern;="Obsolete"
+1514;StockCharts;P&F -- Price Objective;="Obsolete"
+1515;StockCharts;P&F -- Trend;="Obsolete"
+
+2651;OptionsXPress;Option Expiration Date #1;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),1)
+2652;OptionsXPress;Option Expiration Date #2;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),2)
+2653;OptionsXPress;Option Expiration Date #3;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),3)
+2654;OptionsXPress;Option Expiration Date #4;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),4)
+2655;OptionsXPress;Option Expiration Date #5;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),5)
+2656;OptionsXPress;Option Expiration Date #6;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),6)
+2657;OptionsXPress;Option Expiration Date #7;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),7)
+2658;OptionsXPress;Option Expiration Date #8;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),8)
+2659;OptionsXPress;Option Expiration Date #9;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),9)
+2660;OptionsXPress;Option Expiration Date #10;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),10)
+2661;OptionsXPress;Option Expiration Date #11;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),11)
+2662;OptionsXPress;Option Expiration Date #12;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),12)
+2663;OptionsXPress;Option Expiration Date #13;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),13)
+2664;OptionsXPress;Option Expiration Date #14;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),14)
+2665;OptionsXPress;Option Expiration Date #15;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),15)
+2666;OptionsXPress;Option Expiration Date #16;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),16)
+2667;OptionsXPress;Option Expiration Date #17;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),17)
+2668;OptionsXPress;Option Expiration Date #18;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),18)
+2669;OptionsXPress;Option Expiration Date #19;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),19)
+2670;OptionsXPress;Option Expiration Date #20;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),20)
+2671;OptionsXPress;Option Expiration Date #21;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),21)
+2672;OptionsXPress;Option Expiration Date #22;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),22)
+2673;OptionsXPress;Option Expiration Date #23;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),23)
+2674;OptionsXPress;Option Expiration Date #24;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1),24)
+2675;OptionsXPress;Weekly Expiration Date #1;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),1)
+2676;OptionsXPress;Weekly Expiration Date #2;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),2)
+2677;OptionsXPress;Weekly Expiration Date #3;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),3)
+2678;OptionsXPress;Weekly Expiration Date #4;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),4)
+2679;OptionsXPress;Weekly Expiration Date #5;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),5)
+2680;OptionsXPress;Weekly Expiration Date #6;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),6)
+2681;OptionsXPress;Weekly Expiration Date #7;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),7)
+2682;OptionsXPress;Weekly Expiration Date #8;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"w"),8)
+2683;OptionsXPress;Monthly Expiration Date #1;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),1)
+2684;OptionsXPress;Monthly Expiration Date #2;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),2)
+2685;OptionsXPress;Monthly Expiration Date #3;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),3)
+2686;OptionsXPress;Monthly Expiration Date #4;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),4)
+2687;OptionsXPress;Monthly Expiration Date #5;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),5)
+2688;OptionsXPress;Monthly Expiration Date #6;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),6)
+2689;OptionsXPress;Monthly Expiration Date #7;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),7)
+2690;OptionsXPress;Monthly Expiration Date #8;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),8)
+2691;OptionsXPress;Monthly Expiration Date #9;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),9)
+2692;OptionsXPress;Monthly Expiration Date #10;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),10)
+2693;OptionsXPress;Monthly Expiration Date #11;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),11)
+2694;OptionsXPress;Monthly Expiration Date #12;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),12)
+2695;OptionsXPress;Monthly Expiration Date #13;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),13)
+2696;OptionsXPress;Monthly Expiration Date #14;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),14)
+2697;OptionsXPress;Monthly Expiration Date #15;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"m"),15)
+2698;OptionsXPress;Quarterly Expiration Date #1;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"q"),1)
+2699;OptionsXPress;Quarterly Expiration Date #2;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"q"),2)
+2700;OptionsXPress;Quarterly Expiration Date #3;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"q"),3)
+2701;OptionsXPress;Quarterly Expiration Date #4;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"q"),4)
+2702;OptionsXPress;Quarterly Expiration Date #5;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"q"),5)
+2703;OptionsXPress;Quarterly Expiration Date #6;=INDEX(smfGetOptionExpirations("~~~~~","OX",,,24,1,,"q"),6)
+
+2704;OptionsXPress;ITM5 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),1)
+2705;OptionsXPress;ITM4 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),2)
+2706;OptionsXPress;ITM3 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),3)
+2707;OptionsXPress;ITM2 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),4)
+2708;OptionsXPress;ITM1 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),5)
+2709;OptionsXPress;OTM1 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),6)
+2710;OptionsXPress;OTM2 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),7)
+2711;OptionsXPress;OTM3 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),8)
+2712;OptionsXPress;OTM4 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),9)
+2713;OptionsXPress;OTM5 Call Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Call","OX",1,10,1),10)
+2714;OptionsXPress;OTM5 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),1)
+2715;OptionsXPress;OTM4 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),2)
+2716;OptionsXPress;OTM3 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),3)
+2717;OptionsXPress;OTM2 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),4)
+2718;OptionsXPress;OTM1 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),5)
+2719;OptionsXPress;ITM1 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),6)
+2720;OptionsXPress;ITM2 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),7)
+2721;OptionsXPress;ITM3 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),8)
+2722;OptionsXPress;ITM4 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),9)
+2723;OptionsXPress;ITM5 Put Ticker Symbol;=INDEX(smfGetOptionStrikes(smfWord("~~~~~",1,","),smfWord("~~~~~",2,","),"Put","OX",1,10,1),10)
+2724;YahooH;Ex-Dividend Date (Historical Estimate);=INDEX(RCHGetYahooHistory("~~~~~",,,,,,,"v",,0,,,10,1),MATCH(Today()-365,RCHGetYahooHistory("~~~~~",,,,,,,"v",,0,,,10,1),-1))+365
+2725;TDAmeritrade;Ex-Dividend Date;=DATEVALUE(smfGetTagContent("http://research.tdameritrade.com/public/stocks/overview/overview.asp?symbol=~~~~~","div",1,">Ex-Dividend"))
+2726;YahooH;Previous Dividend Payment;=INDEX(RCHGetYahooHistory("~~~~~",,,,,,,"v",,0,,,1,2),1,2)

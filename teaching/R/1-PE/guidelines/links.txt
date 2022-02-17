@@ -1,0 +1,1 @@
+Davis Vaughan kindly [blogged](https://blog.davisvaughan.com/2018/02/16/tidying-excel-cash-flow-spreadsheets-in-r/) about using unpivotr to tidy spreadsheets of cashflows.

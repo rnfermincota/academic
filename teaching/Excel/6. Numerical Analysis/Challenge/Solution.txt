@@ -1,0 +1,793 @@
+' Written by Rafael Nicolas Fermin Cota 3/14/2017
+Function SA5_SUGGESTED_SOLUTION_FUNC(ByRef DATA_RNG As Variant)
+
+Dim i As Long
+Dim j As Long
+Dim k As Long
+Dim NSIZE As Long
+Dim NROWS As Long
+Dim NCOLUMNS As Long
+Dim HEADINGS_STR As String
+Dim TEMP_VAL As Double
+Dim DATA_MATRIX As Variant
+Dim TEMP_MATRIX As Variant
+
+On Error GoTo ERROR_LABEL
+
+GoSub ASSIGN_VARIABLES_LINE
+GoSub LOAD_HEADINGS_LINE
+
+'Load Inputs
+For i = 1 To NROWS
+    For j = 1 To NSIZE
+        TEMP_MATRIX(i, j) = DATA_MATRIX(i, j)
+    Next j
+Next i
+For i = 1 To NROWS
+    
+    'To activate in Excel the R1C1 Reference Style go to Options - Formulas and check R1C1
+    'reference style!!
+    '--------------------------------------------------------------------------------------------
+    'Operating leases number of years
+    '=SUM(IF(RC[-49]>0,1,0),IF(RC[-48]>0,1,0),IF(RC[-47]>0,1,0),IF(RC[-46]>0,1,0),IF(RC[-45]>0,1,0))
+    'first formulation start in Column 69, so column 69-49 = 20
+    '=IIF(TEMP_MATRIX(i, 20)>0,1,0) + IIF(TEMP_MATRIX(i, 21)>0,1,0) + IIF(TEMP_MATRIX(i, 22)>0,1,0) + IIF(TEMP_MATRIX(i, 23)>0,1,0) + IIF(TEMP_MATRIX(i, 24)>0,1,0))
+    For j = 20 To 24
+        If TEMP_MATRIX(i, j) > 0 Then: TEMP_MATRIX(i, NSIZE + 1) = TEMP_MATRIX(i, NSIZE + 1) + 1
+    Next j
+    
+
+
+    '--------------------------------------------------------------------------------------------
+    'Number of years embedded in leases
+    '=IF(RC[-1]=0,0,IF(AVERAGE(RC[-50],RC[-49],RC[-48],RC[-47],RC[-46])=0,0,ROUND(RC[-45]/AVERAGE(RC[-50],RC[-49],RC[-48],RC[-47],RC[-46]),0)))
+    'column 70-50 = 20
+    If TEMP_MATRIX(i, NSIZE + 1) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 2) = 0
+    Else
+        k = TEMP_MATRIX(i, NSIZE + 1)
+        TEMP_VAL = TEMP_MATRIX(i, 20) + TEMP_MATRIX(i, 21) + TEMP_MATRIX(i, 22) + _
+                   TEMP_MATRIX(i, 23) + TEMP_MATRIX(i, 24)
+        If TEMP_VAL = 0 Then
+            TEMP_MATRIX(i, NSIZE + 2) = 0
+        Else
+            TEMP_MATRIX(i, NSIZE + 2) = Round(TEMP_MATRIX(i, 25) / (TEMP_VAL / k), 0)
+        End If
+    End If
+
+    '--------------------------------------------------------------------------------------------
+    'Debt Value of leases
+    'From: =IF(RC[-2]=0,0,SUM(RC[-51]/(1+RC[-53])^1,RC[-50]/(1+RC[-53])^2,RC[-49]/(1+RC[-53])^3,RC[-48]/(1+RC[-53])^4,RC[-47]/(1+RC[-53])^5,IF(RC[-1]>0,(IF(RC[-46]>0,IF(RC[-1]>1,RC[-46]/RC[-1],RC[-46]),0)*(1-(1+RC[-53])^(-RC[-1]))/RC[-53])/(1+RC[-53])^5,IF(RC[-46]>0,IF(RC[-1]>1,RC[-46]/RC[-1],RC[-46]),0)/(1+RC[-53])^6)))
+    'To:
+    'IF RC[-2]=0 Then
+    '   TEMP_MATRIX(i, NSIZE + 3) = 0
+    'Else
+    '   TEMP_MATRIX(i, NSIZE + 3) = RC[-51]/(1+RC[-53])^1 + RC[-50]/(1+RC[-53])^2 + RC[-49]/(1+RC[-53])^3 + RC[-48]/(1+RC[-53])^4 + RC[-47]/(1+RC[-53])^5 +
+    '   IF RC[-1]>0 Then
+    '       IF RC[-46]>0 Then
+    '           IF RC[-1]>1 Then
+    '               TEMP_VAL = RC[-46]/RC[-1]
+    '           Else
+    '               TEMP_VAL = RC[-46]
+    '           End If
+    '       Else
+    '           TEMP_VAL = 0
+    '       End If
+    '       TEMP_VAL = TEMP_VAL *(1-(1+RC[-53])^(-RC[-1]))/RC[-53])/(1+RC[-53])^5
+    '   Else
+    '       IF RC[-46]>0 Then
+    '           IF RC[-1]>1 Then
+    '               TEMP_VAL = RC[-46]/RC[-1]
+    '           Else
+    '               TEMP_VAL = RC[-46]
+    '           End If
+    '       Else
+    '           TEMP_VAL = 0
+    '       End If
+    '       TEMP_VAL = TEMP_VAL / (1+RC[-53])^6
+    '   End If
+    '   TEMP_MATRIX(i, NSIZE + 3) = TEMP_MATRIX(i, NSIZE + 3) + TEMP_VAL
+    'End If
+
+    If TEMP_MATRIX(i, NSIZE + 1) = 0 Then
+         TEMP_MATRIX(i, NSIZE + 3) = 0
+'If the Operating Leases number of years is 0, then the Debt Value of the leases is 0
+
+    Else
+        TEMP_MATRIX(i, NSIZE + 3) = _
+            TEMP_MATRIX(i, 20) / (1 + TEMP_MATRIX(i, 18)) ^ 1 + _
+            TEMP_MATRIX(i, 21) / (1 + TEMP_MATRIX(i, 18)) ^ 2 + _
+            TEMP_MATRIX(i, 22) / (1 + TEMP_MATRIX(i, 18)) ^ 3 + _
+            TEMP_MATRIX(i, 23) / (1 + TEMP_MATRIX(i, 18)) ^ 4 + _
+            TEMP_MATRIX(i, 24) / (1 + TEMP_MATRIX(i, 18)) ^ 5
+
+'If the Operating Leases number of years is not 0, then the Debt Value is equal to the sum of the
+'present value of the lease commitments from years 1 to 5. The discount rate is equal to the Pre-tax cost of debt
+'for the company.
+
+        If TEMP_MATRIX(i, NSIZE + 2) > 0 Then
+            If TEMP_MATRIX(i, 25) > 0 Then
+                If TEMP_MATRIX(i, NSIZE + 2) > 1 Then
+                    TEMP_VAL = TEMP_MATRIX(i, 25) / TEMP_MATRIX(i, NSIZE + 2)
+
+                Else
+                    TEMP_VAL = TEMP_MATRIX(i, 25)
+                End If
+            Else
+                TEMP_VAL = 0
+            End If
+            TEMP_VAL = TEMP_VAL * (1 - 1 / (1 + TEMP_MATRIX(i, 18)) ^ TEMP_MATRIX(i, NSIZE + 2)) / TEMP_MATRIX(i, 18)
+            TEMP_VAL = TEMP_VAL / (1 + TEMP_MATRIX(i, 18)) ^ TEMP_MATRIX(i, NSIZE + 1)
+        Else
+            If TEMP_MATRIX(i, 25) > 0 Then
+                If TEMP_MATRIX(i, NSIZE + 2) > 1 Then
+                    TEMP_VAL = TEMP_MATRIX(i, 25) / TEMP_MATRIX(i, NSIZE + 2)
+                Else
+                    TEMP_VAL = TEMP_MATRIX(i, 25)
+                End If
+            Else
+                TEMP_VAL = 0
+            End If
+            TEMP_VAL = TEMP_VAL / (1 + TEMP_MATRIX(i, 18)) ^ (TEMP_MATRIX(i, NSIZE + 1) + 1)
+        End If
+        TEMP_MATRIX(i, NSIZE + 3) = TEMP_MATRIX(i, NSIZE + 3) + TEMP_VAL
+    End If
+
+'Here the code is attempting to assign a value to TEMP_VAL based on a present value of the
+'Lease beyond last year/number of years embedded in lease. In the event that the number of years embedded in the lease
+'is equal to 0, TEMP_VAL must be equal to the lease commitment beyond the last year. In the event that Lease beyond
+'last year is 0, then TEMP_VAL is also 0. Ultimately, we are trying to determine the present value of the
+'terminal value of the lease beyond the last year for each year that the lease is embedded. In the event however,
+'that the number of years embedded in the leases is greater than 1, the number of years by which to present value also
+'increases by 1 to account for the time value of money for the first year.
+'In both instances, as long as the number of years embedded is greater than 0, the Debt value of
+'the leases is equal to the TEMP_VAL added to the previous outstanding value of the Debt value of the lease.
+
+    
+    
+    '--------------------------------------------------------------------------------------------
+    TEMP_MATRIX(i, NSIZE + 4) = TEMP_MATRIX(i, 46) + _
+                                TEMP_MATRIX(i, NSIZE + 3) * TEMP_MATRIX(i, 18)
+'This calculates EBIT after accounting for interest accrued on the outstanding debt-value of the leases
+
+    TEMP_MATRIX(i, NSIZE + 5) = TEMP_MATRIX(i, 15) + TEMP_MATRIX(i, NSIZE + 3)
+'This calculates the Total amount of interest-bearing debt after accounting for the debt value of leases
+
+    TEMP_MATRIX(i, NSIZE + 6) = TEMP_MATRIX(i, 46)
+'Lease-adjusted operating income is equal to the Fiscal-year EBIT
+
+    TEMP_MATRIX(i, NSIZE + 7) = TEMP_MATRIX(i, 19)
+'This states that the adjusted lease expense is equal to the interest-accrued lease expense
+    
+    If TEMP_MATRIX(i, NSIZE + 3) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 8) = 0
+    Else
+        TEMP_MATRIX(i, NSIZE + 8) = _
+            TEMP_MATRIX(i, NSIZE + 3) / (TEMP_MATRIX(i, NSIZE + 1) + TEMP_MATRIX(i, NSIZE + 2))
+    End If
+'This code calculates the annual depreciation on the debt value of leases based on the total number of years
+'embedded in the lease in addition to the total number operating lease years
+
+    TEMP_MATRIX(i, NSIZE + 9) = TEMP_MATRIX(i, NSIZE + 6) + _
+                                TEMP_MATRIX(i, NSIZE + 7) - TEMP_MATRIX(i, NSIZE + 8)
+'Adjusted operating income is found by adding together both the EBIT and accrued interest amounts and subtracting the
+'depreciation associated with the asset. This depreciation amount can be calculated above.
+
+    For j = 59 To NSIZE 'R&D expenses from years 1 to 10
+        If TEMP_MATRIX(i, j) > 0 Then: TEMP_MATRIX(i, NSIZE + 10) = TEMP_MATRIX(i, NSIZE + 10) + 1
+    Next j
+'This code simply counts the number of years in which our company has incurred R&D expenses to determine over
+'how many years the R&D expense should be amortized.
+
+    If TEMP_MATRIX(i, NSIZE + 10) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 11) = 0
+        TEMP_MATRIX(i, NSIZE + 12) = 0
+    Else
+        TEMP_MATRIX(i, NSIZE + 11) = TEMP_MATRIX(i, 58) * 1
+        k = 1
+        For j = 59 To NSIZE
+            TEMP_MATRIX(i, NSIZE + 11) = TEMP_MATRIX(i, NSIZE + 11) + _
+                TEMP_MATRIX(i, j) * (TEMP_MATRIX(i, NSIZE + 10) - k) / _
+                TEMP_MATRIX(i, NSIZE + 10)
+            TEMP_MATRIX(i, NSIZE + 12) = TEMP_MATRIX(i, NSIZE + 12) + TEMP_MATRIX(i, j)
+            k = k + 1
+        Next j
+        TEMP_MATRIX(i, NSIZE + 12) = TEMP_MATRIX(i, NSIZE + 12) / TEMP_MATRIX(i, NSIZE + 10)
+    End If
+'The research expense is equal to the R&D expense in year 0 times the portion of the previous year's R&D expense
+'over the current year's R&D expense until k loops to k = TEMP_MATRIX(i, NSIZE + 10)
+'Amortization is simply equal to the total amortization to date plus the most recent year's R&D expense divided by the
+'number of periods in which the R&D expense was incurred.
+
+    TEMP_MATRIX(i, NSIZE + 13) = TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'In order to arrive at adjusted Operating income (i.e. EBITDA) we must subtract the Amortization expense from the
+'total R&D expense to arrive at R&D Expense Less: Amortization
+
+    TEMP_MATRIX(i, NSIZE + 14) = TEMP_MATRIX(i, 43) + TEMP_MATRIX(i, 19) + TEMP_MATRIX(i, 58)
+'EBITDA for the last fiscal year is equal to last year's EBITDA + Lease expense + Year 0 Research expense
+'(This doesn't make sense to me.)
+
+    TEMP_MATRIX(i, NSIZE + 15) = TEMP_MATRIX(i, 44) + TEMP_MATRIX(i, 19) + TEMP_MATRIX(i, 58)
+'EBITDA for the last 12 months is equal to EBITDA for the last 12 months + Lease expense + Year 0 research expense
+    
+    TEMP_MATRIX(i, NSIZE + 16) = TEMP_MATRIX(i, 45) + TEMP_MATRIX(i, 19) + TEMP_MATRIX(i, 58)
+'EBITDA going forward is equal to EBITDA: Forward + Lease Expense + Year 0 research expense
+    
+    TEMP_MATRIX(i, NSIZE + 17) = TEMP_MATRIX(i, 46) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'EBIT for last fiscal year is equal to EBIT + Lease expense - Asset depreciation + Year 0 Research expense -
+'current year Amortization
+                                 
+    TEMP_MATRIX(i, NSIZE + 18) = TEMP_MATRIX(i, 47) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'EBIT: Last 12 months = EBIT: Last 12 months + Lease expense - Asset Depreciation + Year 0 Research expense -
+'current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 19) = TEMP_MATRIX(i, 48) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'EBIT: Forward = EBIT: Forward + Lease Expense - Asset Depreciation + Year 0 Research Expense -
+'Current year Amortization
+
+    TEMP_MATRIX(i, NSIZE + 20) = TEMP_MATRIX(i, 46) * (1 - TEMP_MATRIX(i, 49)) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'After-tax EBIT = EBIT * (1 - Effective tax rate) + Lease Expense - Asset Depreciation + Year 0 Research Expense -
+'Current year Amortization
+
+    TEMP_MATRIX(i, NSIZE + 21) = TEMP_MATRIX(i, 47) * (1 - TEMP_MATRIX(i, 50)) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'After-tax EBIT: Last 12 months = EBIT: Last 12 months * (1 - Effective tax rate: Last 12 months) + Lease Expense -
+'Asset Depreciation + Year 0 Research Expense - Current year Amortization
+
+    TEMP_MATRIX(i, NSIZE + 22) = TEMP_MATRIX(i, 48) * (1 - TEMP_MATRIX(i, 51)) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'After-tax EBIT: Forward = EBIT: Forward * (1 - Effective tax rate forward) + Lease Expense -
+'Asset Depreciation + Year 0 Research Expense - Current year Amortization
+    
+    TEMP_MATRIX(i, NSIZE + 23) = TEMP_MATRIX(i, 52) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Net income: Last fiscal year = Net income: Last fiscal year + Year 0 Research Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 24) = TEMP_MATRIX(i, 53) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Net income: Last 12 months = Net income: Last 12 months + Year 0 Researxh Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 25) = TEMP_MATRIX(i, 54) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Net income: Forward = Net income: Forward + Year 0 Research Expense - Current Year amortization
+    
+    TEMP_MATRIX(i, NSIZE + 26) = TEMP_MATRIX(i, 52) - TEMP_MATRIX(i, 55) * (1 - TEMP_MATRIX(i, 49)) + _
+                                 TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Non-cash net income: Last fiscal year = Net income: last fiscal year - Interest income from cash: Last fiscal year *
+'(1 - Effective tax rate) + Year 0 Research Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 27) = TEMP_MATRIX(i, 53) - TEMP_MATRIX(i, 56) * (1 - TEMP_MATRIX(i, 50)) + _
+                                 TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Non-cash net income: Last 12 months = Net income: last 12 months - Interest income from cash: last 12 months *
+'(1 - Effective tax rate: Last 12 months) + Year 0 Research Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 28) = TEMP_MATRIX(i, 54) - TEMP_MATRIX(i, 57) * (1 - TEMP_MATRIX(i, 51)) + _
+                                 TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Non-cash net income: Forward = Net income: forward - Interest income from cash: forward * (1 - Effective tax rate:
+'Forward) + Year 0 Research Expense - Current Year amortization
+                                 
+    
+    TEMP_MATRIX(i, NSIZE + 29) = TEMP_MATRIX(i, 4) * TEMP_MATRIX(i, 5)
+ 
+'Market capitalization = Number of shares outstanding * Market Price/Share
+    
+    '---------------------------------------------------------------------
+    
+    '5,4,9,3,11,10,12,8,,1
+    '5,4,9,3,11,10,12,8,+30,0
+    If TEMP_MATRIX(i, 7) = "" Then
+        TEMP_MATRIX(i, NSIZE + 30) = VALUE_PER_OPTION_FUNC(TEMP_MATRIX(i, 5), _
+                TEMP_MATRIX(i, 4), TEMP_MATRIX(i, 9), TEMP_MATRIX(i, 3), _
+                TEMP_MATRIX(i, 11), TEMP_MATRIX(i, 10), TEMP_MATRIX(i, 12), _
+                TEMP_MATRIX(i, 8), , 1)
+                
+        TEMP_MATRIX(i, NSIZE + 31) = VALUE_PER_OPTION_FUNC(TEMP_MATRIX(i, 5), _
+                TEMP_MATRIX(i, 4), TEMP_MATRIX(i, 9), TEMP_MATRIX(i, 3), _
+                TEMP_MATRIX(i, 11), TEMP_MATRIX(i, 10), TEMP_MATRIX(i, 12), _
+                TEMP_MATRIX(i, 8), TEMP_MATRIX(i, NSIZE + 30), 0)
+    Else
+        TEMP_MATRIX(i, NSIZE + 30) = ""
+        TEMP_MATRIX(i, NSIZE + 31) = TEMP_MATRIX(i, 7)
+    End If
+'If the value per option is 0, then use the VALUE_PER_OPTION_FUNC function, with market price/share, number of shares,
+'average strike price, risk-free rate, stock price standard deviation, average maturity, stock dividend yield, and
+'number of options outstanding as inputs, to determine the adjusted stock price.
+
+'Use the same inputs, including the adjusted stock price as an input, in the VALUE_PER_OPTION_FUNC function to determine
+'the actual value per option
+    '---------------------------------------------------------------------
+
+    TEMP_MATRIX(i, NSIZE + 32) = TEMP_MATRIX(i, NSIZE + 31) * TEMP_MATRIX(i, 8)
+'The value of outstanding employee options = value per option * number of options outstanding
+    
+    If TEMP_MATRIX(i, 28) = "" Then
+        TEMP_MATRIX(i, NSIZE + 33) = (TEMP_MATRIX(i, 29) / 2) * TEMP_MATRIX(i, 27) * _
+        (1 - (1 + TEMP_MATRIX(i, 18) / 2) ^ (-TEMP_MATRIX(i, 30) * 2)) / _
+        (TEMP_MATRIX(i, 18) / 2) + TEMP_MATRIX(i, 27) / (1 + TEMP_MATRIX(i, 18)) _
+        ^ TEMP_MATRIX(i, 30)
+    Else
+        TEMP_MATRIX(i, NSIZE + 33) = TEMP_MATRIX(i, 28)
+    End If
+'If the Straight Debt component value is 0, then the Straight debt component = coupon rate/2 * Book value of convertible
+'debt * (1 - (1 + Pre-tax Cost of debt for company / 2) ^ (-Maturity of converitble debt * 2)) / (Cost of debt / 2) +
+'Book value of convertible debt / (1 + Pre-tax cost of debt)^(Maturity of convertible debt)
+
+'Otherwise Convertible breakdown: Straight debt component = Straight debt component
+    
+    TEMP_MATRIX(i, NSIZE + 34) = TEMP_MATRIX(i, 26) - TEMP_MATRIX(i, NSIZE + 33)
+'Equity component of convertible breakdown = Market value of convertible debt - Straight debt component
+    
+    If TEMP_MATRIX(i, 13) > 0 Then
+        If TEMP_MATRIX(i, 33) = 0 Then
+            TEMP_MATRIX(i, NSIZE + 35) = 0
+        Else
+            TEMP_MATRIX(i, NSIZE + 35) = (TEMP_MATRIX(i, 13) * TEMP_MATRIX(i, 32)) / TEMP_MATRIX(i, 33)
+        End If
+    Else
+        TEMP_MATRIX(i, NSIZE + 35) = 0
+    End If
+'If book value of preferred stock is greater than 0, and preferred dividend yield on straight preferred is = 0, then
+'convertible breakdown: Preferred stock component = 0. If preferred dividend yield does not equal 0, then the
+'preferred stock component = book value of preferred stock * preferred dividend yield on convertible / preferred
+'dividend yield on straight preferred.
+'This is because, in trying to figure out the value of the preferred stock component, we must understand the ratio
+'of the convertible preferred yield to the straight preferred yield.
+    
+    TEMP_MATRIX(i, NSIZE + 36) = TEMP_MATRIX(i, 34) - TEMP_MATRIX(i, NSIZE + 35)
+'Convertible breakdown: Equity component = Decomposition of preferred stock - Preferred stock component
+
+    TEMP_MATRIX(i, NSIZE + 37) = TEMP_MATRIX(i, NSIZE + 34) + TEMP_MATRIX(i, NSIZE + 36)
+'Value of conversion options = Equity component + Equity component
+    
+    TEMP_MATRIX(i, NSIZE + 38) = TEMP_MATRIX(i, NSIZE + 29) + _
+    TEMP_MATRIX(i, NSIZE + 32) + TEMP_MATRIX(i, NSIZE + 37)
+'Market value of all equity = Market capitalization + Value of employee options + value of conversion options
+    
+    TEMP_MATRIX(i, NSIZE + 39) = TEMP_MATRIX(i, 17) * (1 - (1 + TEMP_MATRIX(i, 18)) ^ _
+                                (-TEMP_MATRIX(i, 16))) / TEMP_MATRIX(i, 18) + _
+                                TEMP_MATRIX(i, 15) / (1 + TEMP_MATRIX(i, 18)) ^ _
+                                TEMP_MATRIX(i, 16)
+'Market value of interest-bearing debt = Interest expense on debt * (1 - (1 + Pre-tax cost of debt))^(-Average
+'maturity of debt)) / Pre-tax cost of debt + Book value of interest bearing debt / (1 + Pre-tax cost of debt) ^
+'Average maturity of debt
+    
+    TEMP_MATRIX(i, NSIZE + 40) = TEMP_MATRIX(i, NSIZE + 3)
+'Debt value of leases = debt value of leases
+
+    TEMP_MATRIX(i, NSIZE + 41) = TEMP_MATRIX(i, NSIZE + 39) + TEMP_MATRIX(i, NSIZE + 40)
+'Market value of all debt is the sum of interest-bearing debt and debt value of leases
+
+    TEMP_MATRIX(i, NSIZE + 42) = TEMP_MATRIX(i, 14) + TEMP_MATRIX(i, NSIZE + 35)
+'Market value of preferred stock = market value of preferred stock + convertible breakdown: preferred stock component
+
+    TEMP_MATRIX(i, NSIZE + 43) = TEMP_MATRIX(i, NSIZE + 11) + TEMP_MATRIX(i, 6)
+'Book Value: Equity = R&D Expenses: Value of Research Asset + Book value of common equity
+
+    TEMP_MATRIX(i, NSIZE + 44) = TEMP_MATRIX(i, NSIZE + 3) + TEMP_MATRIX(i, 15) + _
+                                 TEMP_MATRIX(i, 27)
+'Book Value: +Debt = Debt value of leases + Book value of interest-bearing debt + Book value of convertible debt
+    
+    TEMP_MATRIX(i, NSIZE + 45) = TEMP_MATRIX(i, 13) + TEMP_MATRIX(i, 31)
+'Book Value: +Preferred = Book value of preferred stock + Book value of convertible preferred
+
+    TEMP_MATRIX(i, NSIZE + 46) = TEMP_MATRIX(i, 35)
+'Book Value: -Cash = Cash and Marketable securities
+    
+    TEMP_MATRIX(i, NSIZE + 47) = TEMP_MATRIX(i, NSIZE + 43) + _
+                                 TEMP_MATRIX(i, NSIZE + 44) + _
+                                 TEMP_MATRIX(i, NSIZE + 45) - _
+                                 TEMP_MATRIX(i, NSIZE + 46)
+'Book value: invested Capital = Sum of the above variables:
+'For j = 43 to 46, TEMP_MATRIX(i,NSIZE + j)
+    
+    TEMP_MATRIX(i, NSIZE + 48) = TEMP_MATRIX(i, NSIZE + 38)
+'Firm value: Market value of Equity = Market value of Equity
+
+    TEMP_MATRIX(i, NSIZE + 49) = TEMP_MATRIX(i, NSIZE + 41)
+'Firm value: +Market value of Debt = Market Value of Debt
+
+    TEMP_MATRIX(i, NSIZE + 50) = TEMP_MATRIX(i, NSIZE + 42)
+'Firm Value: +Market value of Preferred = Market value of preferred stock
+    
+    TEMP_MATRIX(i, NSIZE + 51) = TEMP_MATRIX(i, 35)
+'Firm Value: -Cash = Cash and Marketable Securities
+
+    TEMP_MATRIX(i, NSIZE + 52) = TEMP_MATRIX(i, 36) * TEMP_MATRIX(i, 37)
+'Firm Value: -Market Value of minority holdings = Value of cross holdings in other companies * Price to Book Converting
+'Ratio
+
+    TEMP_MATRIX(i, NSIZE + 53) = TEMP_MATRIX(i, 38) * TEMP_MATRIX(i, 39)
+'Firm Value:  + Market value of Minority Interest = Minority Interest * Price to book ratio to convert
+'value of minority interest to market value
+
+    
+    TEMP_MATRIX(i, NSIZE + 54) = TEMP_MATRIX(i, NSIZE + 48) + _
+                                 TEMP_MATRIX(i, NSIZE + 49) + _
+                                 TEMP_MATRIX(i, NSIZE + 50) - _
+                                 TEMP_MATRIX(i, NSIZE + 51) - _
+                                 TEMP_MATRIX(i, NSIZE + 52) + _
+                                 TEMP_MATRIX(i, NSIZE + 53)
+'Firm Value: Enterprise Value = Firm Value: Market Value of Equity + Firm Value: Market Value of Debt + Firm Value:
+'Market Value of Preferred - Firm Value: Cash - Firm Value: Market value of minority holdings +
+'Firm Value: Market value of Minority Interest
+
+    
+    TEMP_MATRIX(i, NSIZE + 55) = TEMP_MATRIX(i, NSIZE + 48) + _
+                                 TEMP_MATRIX(i, NSIZE + 49) + _
+                                 TEMP_MATRIX(i, NSIZE + 50) + _
+                                 TEMP_MATRIX(i, NSIZE + 53)
+'Firm Value: Firm Value (with minority interest) = Market value of equity + Market value of Debt + Market value of
+'preferred + Market value of minority interest
+
+    k = 40
+    For j = 56 To 58
+        If TEMP_MATRIX(i, k) = 0 Then
+            TEMP_MATRIX(i, NSIZE + j) = 0 'CVErr(xlErrDiv0)
+        Else
+            TEMP_MATRIX(i, NSIZE + j) = TEMP_MATRIX(i, NSIZE + 54) / TEMP_MATRIX(i, k)
+        End If
+        k = k + 1
+    Next j
+'If revenues are 0, then all sales-based multiples equal 0. Otherwise, if revenues are greater than 0, then
+'EV/Sales:Current, EV/Sales:Trailing, and EV/Sales:Forward, as a result of the k = k + 1 in TEMP_MATRIX(i, k)
+    
+    k = 14
+    For j = 59 To 67
+        If TEMP_MATRIX(i, NSIZE + k) = 0 Then
+            TEMP_MATRIX(i, NSIZE + j) = 0 'CVErr(xlErrDiv0)
+        Else
+            TEMP_MATRIX(i, NSIZE + j) = TEMP_MATRIX(i, NSIZE + 54) / TEMP_MATRIX(i, NSIZE + k)
+        End If
+        k = k + 1
+    Next j
+'This code calculates EV multiples based on the previously calculated variations of EBITDA and EBIT.
+    
+    k = 23
+    For j = 68 To 70
+        If TEMP_MATRIX(i, NSIZE + k) = 0 Then
+            TEMP_MATRIX(i, NSIZE + j) = 0 'CVErr(xlErrDiv0)
+        Else
+            TEMP_MATRIX(i, NSIZE + j) = TEMP_MATRIX(i, NSIZE + 38) / TEMP_MATRIX(i, NSIZE + k)
+        End If
+        k = k + 1
+    Next j
+'This code calculates PE multiples based on previously calculated variations of earnings
+
+    k = 26
+    For j = 71 To 73
+        If TEMP_MATRIX(i, NSIZE + k) = 0 Then
+            TEMP_MATRIX(i, NSIZE + j) = 0 'CVErr(xlErrDiv0)
+        Else
+            TEMP_MATRIX(i, NSIZE + j) = (TEMP_MATRIX(i, NSIZE + 29) - _
+                            TEMP_MATRIX(i, NSIZE + 51)) / TEMP_MATRIX(i, NSIZE + k)
+        End If
+        k = k + 1
+    Next j
+'This code calculates PE multiples based on previously calculated variations of non-cash earnings
+    
+    If TEMP_MATRIX(i, NSIZE + 47) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 74) = 0 'CVErr(xlErrDiv0)
+    Else
+        TEMP_MATRIX(i, NSIZE + 74) = TEMP_MATRIX(i, NSIZE + 54) / TEMP_MATRIX(i, NSIZE + 47)
+    End If
+'If Invested capital = 0, then EV/Invested Capital = 0. Otherwise, EV/Invested Capital = Firm Value: Enterprise Value/
+'Invested Capital
+
+    If TEMP_MATRIX(i, NSIZE + 43) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 75) = 0 'CVErr(xlErrDiv0)
+    Else
+        TEMP_MATRIX(i, NSIZE + 75) = TEMP_MATRIX(i, NSIZE + 29) / TEMP_MATRIX(i, NSIZE + 43)
+    End If
+'If Book Value: Equity = 0, then Price:Book Value = 0
+'Otherwise, PBV = Market Cap / Equity: Book Value
+
+    If TEMP_MATRIX(i, NSIZE + 43) - TEMP_MATRIX(i, NSIZE + 46) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 76) = 0 'CVErr(xlErrDiv0)
+    Else
+        TEMP_MATRIX(i, NSIZE + 76) = (TEMP_MATRIX(i, NSIZE + 29) - _
+                              TEMP_MATRIX(i, NSIZE + 51)) / _
+                              (TEMP_MATRIX(i, NSIZE + 43) - TEMP_MATRIX(i, NSIZE + 46))
+    End If
+'If Equity: Book Value - Cash = 0, then Non-Cash PBV = 0
+'Otherwise, Non-Cash PBV = (Market Cap - Firm Value: Cash) / (Equity: Book Value - Cash)
+
+Next i
+SA5_SUGGESTED_SOLUTION_FUNC = TEMP_MATRIX
+
+Exit Function
+'-----------------------------------------------------------------------------------------------------------------------
+ASSIGN_VARIABLES_LINE:
+'-----------------------------------------------------------------------------------------------------------------------
+NSIZE = 68
+DATA_MATRIX = DATA_RNG
+NROWS = UBound(DATA_MATRIX, 1)
+If UBound(DATA_MATRIX, 2) <> NSIZE Then: GoTo ERROR_LABEL '68 input variables
+
+'Allow NROWS to be equal to the number of rows in DATA_MATRIX. If the number of columns in DATA_MATRIX do not equal
+'to NSIZE, then go to the ERROR_LABEL.
+
+'-----------------------------------------------------------------------------------------------------------------------
+Return
+'-----------------------------------------------------------------------------------------------------------------------
+LOAD_HEADINGS_LINE:
+'-----------------------------------------------------------------------------------------------------------------------
+HEADINGS_STR = "Name of company,Date of analysis,Risk free rate (long term),Number of shares (primary),Market price/share,Book value of common equity,Option Converter: Value Per Option,Option Converter: Number of options outstanding,Option Converter: Average strike price,Option Converter: Average maturity,"
+HEADINGS_STR = HEADINGS_STR & "Option Converter: Standard deviation on stock price,Option Converter: Dividend yield on stock (if any),Book value of preferred stock,Market value of preferred stock,Book value of interest bearing debt,Average maturity of debt,Interest expense on debt,Pre-tax cost of debt for company,Lease expense - Most recent year,Lease commitment - year 1,"
+HEADINGS_STR = HEADINGS_STR & "Lease commitment - year 2,Lease commitment - year 3,Lease commitment - year 4,Lease commitment - year 5,Lease commitment - Beyond last year,Market value of convertible debt,Book value of convertible debt,Convertible breakdown: Straight Debt component,Coupon rate on convertible debt,Maturity of convertible debt,"
+HEADINGS_STR = HEADINGS_STR & "Book value of convertible preferred,Preferred dividend yield on convertible,Preferred dividend yield on straight preferred ,Decomposition of Preferred Stock,Cash & Marketable Securities,Value of cross holdings in other companies,Price to book ratio to convert value of cross holdings in other companies to market value,Minority Interest,Price to book ratio to convert value of minority interest to market value,Revenues: Last fiscal year,"
+HEADINGS_STR = HEADINGS_STR & "Revenues: Last 12 months,Revenues: Forward,EBITDA: Last fiscal year,EBITDA: Last 12 months,EBITDA: Forward,EBIT: Last fiscal year,EBIT: Last 12 months,EBIT: Forward,Effective Tax Rate: Last fiscal year,Effective Tax Rate: Last 12 months,"
+HEADINGS_STR = HEADINGS_STR & "Effective Tax Rate: Forward,Net Income: Last fiscal year,Net Income: Last 12 months,Net Income: Forward,Interest Income from Cash: Last fiscal year,Interest Income from Cash: Last 12 months,Interest Income from Cash: Forward,R&D expense: year 0,R&D expense: year -1,R&D expense: year -2,"
+HEADINGS_STR = HEADINGS_STR & "R&D expense: year -3,R&D expense: year -4,R&D expense: year -5,R&D expense: year -6,R&D expense: year -7,R&D expense: year -8,R&D expense: year -9,R&D expense: year -10,Operating leases number of years,Number of years embedded in leases,"
+HEADINGS_STR = HEADINGS_STR & "Debt Value of leases,Operating Income with Operating leases reclassified as debt,Debt with Operating leases reclassified as debt,Full Operating lease adjustment: Reported Operating income,Full Operating lease adjustment:  + Current year's operating lease expense,Full Operating lease adjustment:  - Depreciation on leased asset,Full Operating lease adjustment: Adjusted Operating Income,R& D expenses: Periods to amortize R&D expenses,R& D expenses: Value of Research Asset,R& D expenses: Amortization of asset for current year,"
+HEADINGS_STR = HEADINGS_STR & "R& D expenses: Adjustment to Operating Income,EBITDA: Last fiscal year,EBITDA: Last 12 months,EBITDA: Forward,EBIT: Last fiscal year,EBIT: Last 12 months,EBIT: Forward,After-tax EBIT: Last fiscal year,After-tax EBIT: Last 12 months,After-tax EBIT: Forward,"
+HEADINGS_STR = HEADINGS_STR & "Net Income: Last fiscal year,Net Income: Last 12 months,Net Income: Forward,Non-cash Net Income: Last fiscal year,Non-cash Net Income: Last 12 months,Non-cash Net Income: Forward,Market Capitalization,Option Converter: Adjusted Stock Price,Option Converter: Value per option,Option Converter: Value of employee options,"
+HEADINGS_STR = HEADINGS_STR & "Convertible breakdown: Straight Debt component,Convertible breakdown: Equity Component,Convertible breakdown: Preferred Stock component,Convertible breakdown: Equity Component,Convertible breakdown: Value of Conversion options,Market Value of all equity,Market value of interest bearing debt,Debt value of leases (if any),Market Value of all debt,Market value of preferred stock,"
+HEADINGS_STR = HEADINGS_STR & "Book Value: Equity,Book Value:  + Debt,Book Value:  + Preferred,Book Value:  - Cash,Book Value: Invested Capital ,Firm Value: Market Value of Equity,Firm Value:  + Market Value of Debt,Firm Value:  + Market Value of Preferred ,Firm Value:  - Cash,Firm Value:  - Market value of minority holdings ,"
+HEADINGS_STR = HEADINGS_STR & "Firm Value:  + Market value of Minority Interest,Firm Value: Enterprise Value,Firm Value: Firm Value (with minority interest),EV/Sales: Current,EV/Sales: Trailing,EV/Sales: Forward,EV/EBITDA: Current,EV/EBITDA: Trailing,EV/EBITDA: Forward,EV/EBIT: Current,"
+HEADINGS_STR = HEADINGS_STR & "EV/EBIT: Trailing,EV/EBIT: Forward,EV/ After-tax EBIT: Current,EV/ After-tax EBIT: Trailing,EV/ After-tax EBIT: Forward,PE: Current,PE: Trailing,PE: Forward,Non-cash PE: Current,Non-cash PE: Trailing,"
+HEADINGS_STR = HEADINGS_STR & "Non-cash PE: Forward,EV/ Invested Capital: Current,PBV: Current,Non-cash PBV: Current,"
+
+NCOLUMNS = 0
+i = 1
+Do
+    j = InStr(i, HEADINGS_STR, ",")
+    NCOLUMNS = NCOLUMNS + 1
+    i = j + 1
+Loop Until i = 1
+NCOLUMNS = NCOLUMNS - 1
+ReDim TEMP_MATRIX(0 To NROWS, 1 To NCOLUMNS)
+i = 1
+For k = 1 To NCOLUMNS
+    j = InStr(i, HEADINGS_STR, ",")
+    TEMP_MATRIX(0, k) = Mid(HEADINGS_STR, i, j - i)
+    i = j + 1
+Next k
+
+'j is equal to the position of each comma, and i = j + 1 is used to find the location of the next comma. Then for
+'each column starting from the first column (after adjusting the dimensions of TEMP_MATRIX), input the heading for
+'each column 'k', with the heading, j - i, from HEADINGS_STR, following the comma in position j, and following the
+'starting position represented by i. Basically the code is working through the fully consolidated HEADINGS_STR
+'to locate the position of each comma in order to separate each heading, and input it into the appropriate column, k.
+
+'-----------------------------------------------------------------------------------------------------------------------
+Return
+'-----------------------------------------------------------------------------------------------------------------------
+ERROR_LABEL:
+SA5_SUGGESTED_SOLUTION_FUNC = Err.Number
+End Function
+
+
+
+Function VALUE_PER_OPTION_FUNC( _
+ByVal STOCK_PRICE_VAL As Double, _
+ByVal NUMBER_SHARES_OUTSTANDING_VAL As Double, _
+ByVal AVG_STRIKE_VAL As Double, _
+ByVal RISK_FREE_VAL As Double, _
+ByVal STANDARD_DEVIATION_VAL As Double, _
+ByVal AVG_MATURITY_VAL As Double, _
+ByVal DIVIDEND_YIELD_VAL As Double, _
+ByVal NUMBER_OPTIONS_OUTSTANDING_VAL As Double, _
+Optional ByVal ADJUSTED_STOCK_PRICE_VAL As Variant = "", _
+Optional ByVal OUTPUT As Integer = 0)
+
+Dim OPTION_VAL As Double
+
+On Error GoTo ERROR_LABEL
+
+If ADJUSTED_STOCK_PRICE_VAL = "" Then
+    PUB_VALUE_PER_OPTION_ARR(1) = STOCK_PRICE_VAL
+    PUB_VALUE_PER_OPTION_ARR(2) = NUMBER_SHARES_OUTSTANDING_VAL
+    PUB_VALUE_PER_OPTION_ARR(3) = AVG_STRIKE_VAL
+    PUB_VALUE_PER_OPTION_ARR(4) = RISK_FREE_VAL
+    PUB_VALUE_PER_OPTION_ARR(5) = STANDARD_DEVIATION_VAL
+    PUB_VALUE_PER_OPTION_ARR(6) = AVG_MATURITY_VAL
+    PUB_VALUE_PER_OPTION_ARR(7) = DIVIDEND_YIELD_VAL
+    PUB_VALUE_PER_OPTION_ARR(8) = NUMBER_OPTIONS_OUTSTANDING_VAL
+    
+    ADJUSTED_STOCK_PRICE_VAL = _
+        MULLER_ZERO_FUNC(0.0001, 1000, "VALUE_PER_OPTION_OBJ_FUNC", , , 1000, 10 ^ -10)
+        
+End If
+
+OPTION_VAL = _
+Exp((0 - DIVIDEND_YIELD_VAL) * AVG_MATURITY_VAL) * ADJUSTED_STOCK_PRICE_VAL * _
+CND_FUNC(((Log(ADJUSTED_STOCK_PRICE_VAL / AVG_STRIKE_VAL) + _
+((RISK_FREE_VAL - DIVIDEND_YIELD_VAL) + (STANDARD_DEVIATION_VAL ^ 2) / 2) _
+* AVG_MATURITY_VAL) / ((STANDARD_DEVIATION_VAL ^ 2 ^ 0.5) _
+* (AVG_MATURITY_VAL ^ 0.5))), 0, 1) - AVG_STRIKE_VAL * _
+(Exp((0 - RISK_FREE_VAL) * AVG_MATURITY_VAL)) * _
+CND_FUNC((((Log(ADJUSTED_STOCK_PRICE_VAL / _
+AVG_STRIKE_VAL) + ((RISK_FREE_VAL - DIVIDEND_YIELD_VAL) + _
+(STANDARD_DEVIATION_VAL ^ 2) / 2) * AVG_MATURITY_VAL) / _
+((STANDARD_DEVIATION_VAL ^ 2 ^ 0.5) * (AVG_MATURITY_VAL ^ 0.5))) - _
+(((STANDARD_DEVIATION_VAL ^ 2) ^ 0.5) * _
+(AVG_MATURITY_VAL ^ 0.5))), 0, 1)
+
+'----------------------------------------------------------------------------------
+Select Case OUTPUT
+'----------------------------------------------------------------------------------
+Case 0 'Value per option
+'----------------------------------------------------------------------------------
+    VALUE_PER_OPTION_FUNC = OPTION_VAL
+'----------------------------------------------------------------------------------
+Case Else 'Adjusted Stock Price
+'----------------------------------------------------------------------------------
+    VALUE_PER_OPTION_FUNC = (STOCK_PRICE_VAL * NUMBER_SHARES_OUTSTANDING_VAL + _
+                            OPTION_VAL * NUMBER_OPTIONS_OUTSTANDING_VAL) / _
+                            (NUMBER_SHARES_OUTSTANDING_VAL + NUMBER_OPTIONS_OUTSTANDING_VAL)
+'----------------------------------------------------------------------------------
+End Select
+'----------------------------------------------------------------------------------
+
+'The VALUE_PER_OPTION_FUNC function determines the current market value of an option based on a series of inputs,
+'including 'stock price, outstanding shares, averages trike price, risk free rate, standard deviation,
+'average time to maturity, dividend yield, and options outstanding. Using a formulaic format similar to that of
+'Black-Scholes, the VALUE_PER_OPTION_FUNC function effectively calculates the extrinsic (market) value of the options.
+'It then goes on to calculate the adjusted stock price based on the number of outstanding stocks and options, and their
+'respective values. Upon error, the code jumps to PUB_EPSILON, which, my guess leads me to believe that this function
+'identifies option pricing in conjunction with the relationship between the option price and the volatility of the
+'underlying equity.
+
+Exit Function
+ERROR_LABEL:
+VALUE_PER_OPTION_FUNC = PUB_EPSILON
+End Function
+
+
+Function VALUE_PER_OPTION_OBJ_FUNC(ByVal X_VAL As Double)
+
+Dim ADJUSTED_STOCK_PRICE_VAL As Double
+
+On Error GoTo ERROR_LABEL
+
+ADJUSTED_STOCK_PRICE_VAL = VALUE_PER_OPTION_FUNC( _
+    PUB_VALUE_PER_OPTION_ARR(1), _
+    PUB_VALUE_PER_OPTION_ARR(2), _
+    PUB_VALUE_PER_OPTION_ARR(3), _
+    PUB_VALUE_PER_OPTION_ARR(4), _
+    PUB_VALUE_PER_OPTION_ARR(5), _
+    PUB_VALUE_PER_OPTION_ARR(6), _
+    PUB_VALUE_PER_OPTION_ARR(7), _
+    PUB_VALUE_PER_OPTION_ARR(8), _
+    X_VAL, 1)
+
+VALUE_PER_OPTION_OBJ_FUNC = (X_VAL - ADJUSTED_STOCK_PRICE_VAL)
+
+Exit Function
+ERROR_LABEL:
+VALUE_PER_OPTION_OBJ_FUNC = PUB_EPSILON
+End Function
+
+
+'Instead of using WorksheetFunction.NormDist use the function below coded by
+'Melody as part of an extra assignment!
+
+'Remember Excel NormDist(Z_VAL) = CND_FUNC(Z_VAL,0,1)
+'The Speed Improvement is higher than 100x
+
+Function CND_FUNC(ByVal X_VAL As Double, _
+Optional ByVal MEAN_VAL As Double = 0, _
+Optional SD_VAL As Double = 1) As Double
+
+'Reference:
+'Bagby, R. J. "Calculating Normal Probabilities." Amer. Math. Monthly 102, 46-49, 1995
+
+Dim k As Long
+Dim Z_VAL As Double
+Dim T_VAL As Double
+Dim pi As Double
+
+On Error GoTo ERROR_LABEL
+
+pi = 3.14159265358979
+If X_VAL > MEAN_VAL Then k = 1 Else k = -1
+Z_VAL = (X_VAL - MEAN_VAL) / SD_VAL
+T_VAL = 7 * Exp(-0.5 * Z_VAL ^ 2) + 16 * Exp(-1 * (2 - Sqr(2)) * Z_VAL ^ 2) + Exp(-1 * Z_VAL ^ 2) * (7 + 0.25 * pi * Z_VAL ^ 2)
+T_VAL = Sqr(1 - T_VAL / 30)
+CND_FUNC = 0.5 + k * 0.5 * T_VAL
+
+Exit Function
+ERROR_LABEL:
+CND_FUNC = Err.Number
+End Function
+
+
+Function MULLER_ZERO_FUNC(ByVal LOWER_VAL As Double, _
+ByVal UPPER_VAL As Double, _
+ByVal FUNC_NAME_STR As String, _
+Optional ByRef CONVERG_VAL As Integer, _
+Optional ByRef COUNTER As Long, _
+Optional ByVal nLOOPS As Long = 600, _
+Optional ByVal tolerance As Double = 0.000000000000001)
+
+Dim ATEMP_VAL As Double
+Dim BTEMP_VAL As Double
+Dim CTEMP_VAL As Double
+Dim DTEMP_VAL As Double
+
+Dim TEMP_MID As Double
+Dim TEMP_MULT As Double
+Dim TEMP_GRAD As Double
+
+Dim TEMP_FUNC As Double
+Dim FIRST_FUNC As Double
+Dim SECOND_FUNC As Double
+
+On Error GoTo ERROR_LABEL
+'-------------------------------------------------------------------------------
+' MULLER implements Muller's method
+' http://en.wikipedia.org/wiki/M%C3%BCller%27s_method
+'  Parameters:
+'
+'    Input/output, real X, X1, X2.
+'    On input, three distinct points that start the method.
+'    On output, X is an approximation to a root of the equation
+'    which satisfies abs ( F(X) ) < ABSERR, and X1 and X2 are the
+'    previous estimates.
+'-------------------------------------------------------------------------------
+
+  CONVERG_VAL = 0
+  COUNTER = 0
+  TEMP_MID = (LOWER_VAL + UPPER_VAL) / 2
+  
+  SECOND_FUNC = Excel.Application.Run(FUNC_NAME_STR, UPPER_VAL)
+  FIRST_FUNC = Excel.Application.Run(FUNC_NAME_STR, LOWER_VAL)
+  TEMP_FUNC = Excel.Application.Run(FUNC_NAME_STR, TEMP_MID)
+
+'  Iteration loop:
+
+  Do
+'
+'  If the error tolerance is satisfied, then exit.
+'
+    If (Abs(TEMP_FUNC) <= tolerance) Then
+      MULLER_ZERO_FUNC = TEMP_MID
+      Exit Function
+    End If
+
+    COUNTER = COUNTER + 1
+
+    If (COUNTER > nLOOPS) Then
+      CONVERG_VAL = 2
+      MULLER_ZERO_FUNC = TEMP_MID
+      Exit Function
+    End If
+
+    DTEMP_VAL = (TEMP_MID - LOWER_VAL) / (LOWER_VAL - UPPER_VAL)
+    'variabile normalizzata   0 < DTEMP < 1
+
+    ATEMP_VAL = DTEMP_VAL * TEMP_FUNC - DTEMP_VAL * (1 + DTEMP_VAL) * FIRST_FUNC + _
+            DTEMP_VAL ^ 2 * SECOND_FUNC
+    BTEMP_VAL = (2 * DTEMP_VAL + 1) * TEMP_FUNC - (1 + DTEMP_VAL) ^ 2 * FIRST_FUNC + _
+        DTEMP_VAL ^ 2 * SECOND_FUNC
+    
+    CTEMP_VAL = (1 + DTEMP_VAL) * TEMP_FUNC
+
+    TEMP_MULT = BTEMP_VAL ^ 2 - 4 * ATEMP_VAL * CTEMP_VAL
+    If TEMP_MULT < 0 Then TEMP_MULT = 0
+    TEMP_MULT = Sqr(TEMP_MULT)
+    If (BTEMP_VAL < 0) Then: TEMP_MULT = -TEMP_MULT
+
+'  Set the increment.
+'
+    TEMP_GRAD = -(TEMP_MID - LOWER_VAL) * 2 * CTEMP_VAL / (BTEMP_VAL + TEMP_MULT)
+'
+'  Remember current data for next step.
+'
+    UPPER_VAL = LOWER_VAL
+    SECOND_FUNC = FIRST_FUNC
+    LOWER_VAL = TEMP_MID
+    FIRST_FUNC = TEMP_FUNC
+'
+'  Update the iterate and function values.
+'
+    TEMP_MID = TEMP_MID + TEMP_GRAD
+    TEMP_FUNC = Excel.Application.Run(FUNC_NAME_STR, TEMP_MID)
+
+  Loop
+
+Exit Function
+ERROR_LABEL:
+MULLER_ZERO_FUNC = PUB_EPSILON
+End Function

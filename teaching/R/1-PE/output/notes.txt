@@ -1,0 +1,198 @@
+#---------------------------------------------------------------------------------------------------------
+# Blueprint for Analytical Database
+#---------------------------------------------------------------------------------------------------------
+## (1) Business Description
+#---------------------------------------------------------------------------------------------------------
+# [1] "business_description" "deal_team"            "monitoring_team"      "sponsors"            
+# [5] "sponsor_main_contact" "co_investors"         "company_year_end"     "agent"               
+# [9] "advisors"  
+
+#---------------------------------------------------------rnfc------------------------------------------------
+## (2) Security Description**
+#---------------------------------------------------------------------------------------------------------
+# ** NOTE: fields are specific for each company:
+
+# COMP1:
+# [1] "description"                  "tranche_size_initial_draw"    "tranche_size_delayed_draw"   
+# [4] "rnfc_original_amount_invested" "rnfc_percent_ownership"        "rnfc_face_value"              
+# [7] "issue_price"                  "pricing"                      "call_protection"             
+# [10] "maturity"                     "interest_payment_dates"       "equity_co_invest"  
+
+# COMP2:
+# [1] "description"                     "tranche_size_par_value"          "rnfc_mezz_iii_cost_amount"       
+# [4] "rnfc_discretionary_amount"        "rnfc_patriot_co_invest_amount"    "rnfc_percent_ownership_all_funds"
+# [7] "mezz_iii_percent_ownership"      "issue_price_oid"                 "pricing_cash_pik"               
+# [10] "call_protection"                 "maturity"                        "interest_payment_dates"
+
+#---------------------------------------------------------------------------------------------------------
+## (3) Capitalization
+#---------------------------------------------------------------------------------------------------------
+# [1] "period"           "revolver"         "x_1_st_lien"      "capital_leases"   "x_2_nd_lien"     
+# [6] "unsecured_notes"  "seller_note"      "preferred_equity" "cash"             "equity"          
+# [11] "ebitda"           "capex" 
+
+# closing and current capitalization tables: $, EBITDA, EBITDA-Capex and Current vs. Closing
+
+#---------------------------------------------------------------------------------------------------------
+## (4.1) Valuation: Long Term Financial Performance
+#---------------------------------------------------------------------------------------------------------
+# [1] "period"     "revenue"    "adj_ebitda" "acq_ebitda" "capex"      "acq_capex" 
+
+#---------------------------------------------------------------------------------------------------------
+## (4.2) Trading Levels of Company Securities
+#---------------------------------------------------------------------------------------------------------
+# [1] "security"       "maturity"       "pricing"        "next_call_px"   "next_call_date" "bid"           
+# [7] "ytm" 
+
+#---------------------------------------------------------------------------------------------------------
+## (4.3) Valuation Metric #3: M&A Comparables
+#---------------------------------------------------------------------------------------------------------
+# [1] "company"              "ticker"               "market_cap"           "ev"                  
+# [5] "ltm_ebitda"           "ev_ebitda"            "business_description"
+# ** automated through Bloomberg API
+
+#---------------------------------------------------------------------------------------------------------
+## (4.4) Valuation Metric #2: Public Equity Comparables
+#---------------------------------------------------------------------------------------------------------
+# [1] "company"              "acquirer"             "acq_date"             "enter_value"         
+# [5] "ebitda"               "ev_ebitda"            "business_description"
+# ** automated through Bloomberg API
+
+#---------------------------------------------------------------------------------------------------------
+## (4.5) Valuation Metric #1: Summary Discounted Cash Flow Analysis
+#---------------------------------------------------------------------------------------------------------
+# ** all formulations have been coded and optimized: npv, irr, levered beta & wacc
+# ** wacc table fully automated through the Bloomberg server
+
+# [1] data: estimates { "PERIOD", "EBITDA", "TAX", "CAPEX", "OTHER", "WORKING_CAPITAL" }
+# [2] data: exit_ebitda { EBITDA @ PERIOD N }
+# [3] calculated: ev_ebitda {
+      # mean(public_comparables$ev_ebitda) and/or 
+      # 0.75*mean(public_comparables$tev_ltm_ebitda)+0.25*mean(valuation$public_comparables$tev_ltm_ebitda)
+# }
+# [4] calculated: terminal { pv(exit_ebitda*ev_ebitda @ period[n]) }
+# [5] calculated: wacc
+# [5.1] wacc$table = 
+#       data: ticker, company, total_debt, market_cap, years_levered_beta, unlevered_beta
+#       calculated:
+#       d_de = total_debt / (total_debt+market_cap) 
+#       relevered_beta_target_cap = unlevered_beta*(1+lt_target_cap_de*(1-marginal_tax_rate))
+#       relevered_wacc = (relevered_beta_target_cap*market_risk_premium+treasury_yield)*(1-lt_target_cap_dc)+(relevered_cost_debt+other)*(1-marginal_tax_rate)*lt_target_cap_dc
+# [5.2] wacc$assumptions = 
+#       data: valuation_date, marginal_tax_rate, treasury_yield, market_risk_premium, relevered_cost_debt, other
+#       calculated: lt_target_cap_de=mean(wacc$table$d_de), lt_target_cap_dc=lt_target_cap_dc/(1-lt_target_cap_dc)
+# [5.3] wacc$value = mean(wacc$table$relevered_wacc)
+# [6] calculated: fcf - SUM(EBITDA, TAX, CAPEX, OTHER, WORKING_CAPITAL)
+# [7] calculated: npv((fcf + terminal) @ periods & wacc) -> npv.z(dcf$wacc$value, zoosum(dcf$fcf, dcf$terminal), freq=365)
+# [8] calculated: total_net_debt = sum(revolver, x_1_st_lien, capital_leases, x_2_nd_lien, unsecured_notes, seller_note, preferred_equity, cash) 
+# [9] data: equity_contribution = capitalization$current$equity
+# [10] calculated: dcf_tbl = sensitivity table (much more reliable than excel data.table)
+        # crossing(ev_ebitda vector, wacc vector) %>% 
+        #   mutate(
+        #     EV=map2_dbl(.x = ev_ebitda, .y = wacc, ~ dcf.z(.x, .y)), # Enterprise Value
+        #     LTV=dcf$total_net_debt/EV, # Loan to Value
+        #     IEV=EV-dcf$total_net_debt, # Implied Equity Value,
+        #     EC=IEV/dcf$equity_contribution # Equity % of Cost
+        #   )
+
+# ** COMP2 spreadsheet did not calculated correctly the valuation statistics on the "DCF - Enterprise Value" 
+# two-way data table. Need to copy paste the values of "2021 Exit Multiple" & "WACC" so it estimates the
+# npv values correctly.
+
+#---------------------------------------------------------------------------------------------------------
+## (4.6) Valuation Summary
+#---------------------------------------------------------------------------------------------------------
+# references and calculations:
+
+  # npv=valuation$dcf$npv
+  # ebitda=capitalization$current$ebitda # LTM_ADJ_EBITDA
+  # total_net_debt=valuation$dcf$total_net_debt
+  # equity_contribution=valuation$dcf$equity_contribution
+  # public_ev_ebitda=valuation$dcf$ev_ebitda+1
+  
+  # dcf_base:
+    # ev_multiple=npv/ebitda, 
+    # ev_value=npv, 
+    # ltv=total_net_debt/npv, 
+    # equity_value=npv-total_net_debt,
+    # equity_cost=(npv-total_net_debt)/equity_contribution,
+    # weighting=weights[0.5]
+  
+  # public_comps:
+    # ev_multiple=public_ev_ebitda, 
+    # ev_value=public_ev_ebitda*ebitda, 
+    # ltv=total_net_debt/(public_ev_ebitda*ebitda), 
+    # equity_value=public_ev_ebitda*ebitda-total_net_debt,
+    # equity_cost=(public_ev_ebitda*ebitda-total_net_debt)/equity_contribution,
+    # weights[0.25]
+  
+  # ma_comps:
+    # ev_multiple=ma_ev_ebitda, 
+    # ev_value=ma_ev_ebitda*ebitda, 
+    # ltv=total_net_debt/(ma_ev_ebitda*ebitda), 
+    # equity_value=ma_ev_ebitda*ebitda-total_net_debt,
+    # equity_cost=(ma_ev_ebitda*ebitda-total_net_debt)/equity_contribution,
+    # weights[0.25]
+
+  # weighted_average:
+    # ev_multiple=ev_value/ebitda
+    # ev_value=weighted_average(dcf_base[50%], public_comps[25%], ma_comps[25%]) 
+    # ltv=total_net_debt/ev_value
+    # equity_value=weighted_average(dcf_base[50%], public_comps[25%], ma_comps[25%]) 
+    # equity_cost=weighted_average(dcf_base[50%], public_comps[25%], ma_comps[25%]) 
+
+# sample weighted_average_valuation_table:
+  #             method   ev_multiple  ev_value   ltv    equity_value equity_cost weighting
+  # <chr>       <dbl>     <dbl>     <dbl>        <dbl>       <dbl>     <dbl>
+  # 1         dcf_base    15.56077 1168.8087 0.3636181     743.8087   1.4301064      0.50
+  # 2     public_comps    12.78333  960.1887 0.4426213     535.1887   1.0289968      0.25
+  # 3         ma_comps    11.06809  831.3521 0.5112154     406.3521   0.7812852      0.25
+  # 4 weighted_average    13.74324 1032.2896 0.4117062     607.2896   1.1676237        NA
+
+#---------------------------------------------------------------------------------------------------------
+## (5) Commentary - Valuation
+#---------------------------------------------------------------------------------------------------------
+# ** bond pricing formulations have been coded and optimized
+
+# data: risk_classification
+# data: conclusion
+# data: investments_strengths & investments_risks
+
+# calculated: market_security_analysis -> mezzanine_index, implied dollar price, implied_yield (see below)
+
+# [1] adj_mezzanine_index=diff(mezzanine_index_vector)
+# [2] implied_yield=yield+adj_mezzanine_index+adjust_leverage
+# [3] yield=implied_dollar_yield and/or qtr. mezzanine_index_yield (see note below)
+# [4] implied_dollar_price=bond.price(
+#     settle=implied_dollar_price$settlement,
+#     mature=implied_dollar_price$maturity,
+#     coupon=implied_dollar_price$rate,
+#     freq=implied_dollar_price$frequency,
+#     yield=implied_dollar_price$yield,
+#     convention=case_when(
+#       implied_dollar_price$basis == 0 ~"30/360E",
+#       implied_dollar_price$basis == 1 ~"ACT/ACT",
+#       implied_dollar_price$basis == 2 ~"ACT/360",
+#       #    implied_dollar_price$basis == 3 ~"30/360E", # missing Actual/365
+#       implied_dollar_price$basis == 4 ~"30/360E",
+#     )
+#   )
+# [5] implied_dollar_yield=bond.yield(
+#     settle=implied_dollar_yield$settlement,
+#     mature=implied_dollar_yield$maturity,
+#     coupon=implied_dollar_yield$rate,
+#     freq=implied_dollar_yield$frequency,
+#     price=implied_dollar_yield$accreted_price,
+#     convention=case_when(
+#       implied_dollar_yield$basis == 0 ~"30/360E",
+#       implied_dollar_yield$basis == 1 ~"ACT/ACT",
+#       implied_dollar_yield$basis == 2 ~"ACT/360",
+#       #    implied_dollar_yield$basis == 3 ~"30/360E", # missing Actual/365
+#       implied_dollar_yield$basis == 4 ~"30/360E",
+#     )
+
+#---------------------------------------------------------------------------------------------------------
+# Note: "Implied Yield Calculation" to estimate correctly: 
+# "Yield @ Accreted Cost"
+    # COMP1 uses the Q3 2017 "2nd Lien Yield" value
+    # COMP2 is estimated using "bond.yield"

@@ -1,0 +1,133 @@
+Option Explicit
+
+
+Sub Index_Futures()
+Dim m_PriceA As Double
+Dim m_PriceB As Double
+Dim Index_Original_Value As Double
+Dim m_DaysTillExp As Double
+Dim m_Rate As Double
+Dim m_SharesA As Integer
+Dim m_SharesB As Integer
+Dim m_DivA As Double
+Dim m_DivB As Double
+Dim m_DaysDivAInvested As Integer
+Dim m_DaysDivBInvested As Integer
+Dim wsheet As Worksheet
+
+Dim INPUTS_RNG As Range
+
+Set wsheet = ActiveSheet
+With wsheet
+    Set INPUTS_RNG = Range(.Cells(3, 1), .Cells(13, 1))
+    INPUTS_RNG.Value = _
+        WorksheetFunction.Transpose(Array(100, 75, 2000, 90, 0.1, 1000, 2000, 2, 1, 50, 40))
+    INPUTS_RNG.Offset(0, 1).Value = _
+        WorksheetFunction.Transpose(Array("Price A", "Price B", "Index Original Value", _
+            "Days Till Expiry", "Rate", "Shares A", "Shares B", "Dividend A", _
+            "Dividend B", "Days Dividend A Invested", "Days Dividend B Invested"))
+End With
+
+With INPUTS_RNG
+    m_PriceA = .Cells(1, 1)
+    m_PriceB = .Cells(2, 1)
+    Index_Original_Value = .Cells(3, 1)
+    m_DaysTillExp = .Cells(4, 1)
+    m_Rate = .Cells(5, 1)
+    m_SharesA = .Cells(6, 1)
+    m_SharesB = .Cells(7, 1)
+    m_DivA = .Cells(8, 1)
+    m_DivB = .Cells(9, 1)
+    m_DaysDivAInvested = .Cells(10, 1)
+    m_DaysDivBInvested = .Cells(11, 1)
+End With
+
+Dim TEST_FLAG As Boolean
+TEST_FLAG = True
+
+If TEST_FLAG = True Then
+    'To TEst Them
+    Dim Cash_Val As Double
+    
+    Cash_Val = Cash_Val_Func(m_PriceA, _
+        m_PriceB, _
+        m_SharesA, _
+        m_SharesB, _
+        Index_Original_Value)
+    
+    Debug.Print Cash_Val
+    Dim Fair_Val As Double
+    
+    Fair_Val = Fair_Val_Func(Cash_Val, _
+        m_DivA, _
+        m_DivB, _
+        m_DaysDivAInvested, _
+        m_DaysDivBInvested, _
+        m_Rate, _
+        m_DaysTillExp)
+    
+    Debug.Print Fair_Val
+End If
+
+'To Print It
+
+With INPUTS_RNG
+
+    wsheet.Cells(2, 2).Value = "Cash Value of index"
+    wsheet.Cells(2, 1).Formula = "=Cash_Val_Func(" & _
+        .Cells(1).Address(False, False) & "," & _
+        .Cells(2).Address(False, False) & "," & _
+        .Cells(6).Address(False, False) & "," & _
+        .Cells(7).Address(False, False) & "," & _
+        .Cells(3).Address(False, False) & ")"
+
+
+    wsheet.Cells(1, 2).Value = "Fair Value of Index"
+    wsheet.Cells(1, 1).Formula = "=Fair_Val_Func(" & _
+        wsheet.Cells(2, 1).Address(False, False) & "," & _
+        .Cells(8).Address(False, False) & "," & _
+        .Cells(9).Address(False, False) & "," & _
+        .Cells(10).Address(False, False) & "," & _
+        .Cells(11).Address(False, False) & "," & _
+        .Cells(5).Address(False, False) & "," & _
+        .Cells(4).Address(False, False) & ")"
+
+'Function Fair_Val_Func(ByVal Cash_Val As Double, _
+ByVal m_DivA As Double, _
+ByVal m_DivB As Double, _
+ByVal m_DaysDivAInvested As Integer, _
+ByVal m_DaysDivBInvested As Integer, _
+ByVal m_Rate As Double, _
+ByVal m_DaysTillExp As Double)
+End With
+End Sub
+
+Function Cash_Val_Func(ByVal m_PriceA As Double, _
+ByVal m_PriceB As Double, _
+ByVal m_SharesA As Integer, _
+ByVal m_SharesB As Integer, _
+ByVal Index_Original_Value As Double)
+Cash_Val_Func = ((m_SharesA * m_PriceA + m_SharesB * m_PriceB) / Index_Original_Value * 10)
+End Function
+
+Function Fair_Val_Func(ByVal Cash_Val As Double, _
+ByVal m_DivA As Double, _
+ByVal m_DivB As Double, _
+ByVal m_DaysDivAInvested As Integer, _
+ByVal m_DaysDivBInvested As Integer, _
+ByVal m_Rate As Double, _
+ByVal m_DaysTillExp As Double)
+
+Fair_Val_Func = Cash_Val * (1 + (m_Rate * m_DaysTillExp / 360)) - _
+                (m_DivA * (1 + (m_Rate * m_DaysDivAInvested / 360)) + _
+                (m_DivB * (1 + (m_Rate * m_DaysDivBInvested / 360))))
+End Function
+
+Sub Clear()
+Set wsheet = Worksheets("sheet1")
+With wsheet
+    Dim Clear_Rng As Range
+    Set Clear_Rng = Range(Cells(1, 1), Cells(2, 1))
+    Clear_Rng.ClearContents
+End With
+End Sub
