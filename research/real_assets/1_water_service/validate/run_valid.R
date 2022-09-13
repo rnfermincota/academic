@@ -1,4 +1,4 @@
-# Written by Carlos Arias Perez and Rafael Nicolas Fermin
+# Written by Carlos Arias, Joaquin Calderon, and Rafael Nicolas Fermin Cota
 #-----------------------------------------------------------------------------------------
 rm(list=ls())
 graphics.off()
