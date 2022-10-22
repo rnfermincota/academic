@@ -1,0 +1,35 @@
+Competition:
+https://www.sciencedirect.com/science/article/pii/S0169207021001187
+https://github.com/mdancho84/M5-methods/blob/master/M5-Competitors-Guide.pdf
+https://rsangole.netlify.app/post/2020/10/29/m5-competition-notes/
+
+
+Validation:
+https://www.kaggle.com/c/m5-forecasting-accuracy/
+https://github.com/mdancho84/M5-methods/tree/master/validation
+
+
+Winning Solutions
+https://github.com/mdancho84/M5-methods/blob/master/Scores%20and%20Ranks.xlsx
+https://github.com/mdancho84/M5-methods/tree/master/Code%20of%20Winning%20Methods
+
+
+Useful Discussions:
+https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/138881
+https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/133834
+https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/144067
+https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/154776
+
+
+Useful Submissions:
+https://www.kaggle.com/headsortails/back-to-predict-the-future-interactive-m5-eda
+https://www.kaggle.com/kailex/m5-forecaster-v2
+https://www.kaggle.com/mayer79/m5-forecast-attack-of-the-data-table
+https://www.kaggle.com/mayer79/m5-forecast-tidy-r-catboost
+
+
+https://www.kaggle.com/kyakovlev/m5-simple-fe
+https://www.kaggle.com/kyakovlev/m5-lags-features
+https://www.kaggle.com/kyakovlev/m5-custom-features
+https://www.kaggle.com/kyakovlev/m5-three-shades-of-dark-darker-magic
+https://www.kaggle.com/dhananjay3/wrmsse-evaluator-with-extra-features

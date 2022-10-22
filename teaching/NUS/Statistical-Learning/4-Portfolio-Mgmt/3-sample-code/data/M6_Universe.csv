@@ -1,0 +1,101 @@
+﻿id,class,symbol,name,GICS_sector/ETF_type,GICS_industry/ETF_subtype,sector
+1,Stock,ABBV,AbbVie,Health Care,Pharmaceuticals,Healthcare
+2,Stock,ACN,Accenture,Information Technology,IT Consulting & Other Services,Technology
+3,Stock,AEP,American Electric Power,Utilities,Electric Utilities,Utilities
+4,Stock,AIZ,Assurant,Financials,Multi-line Insurance,Financial Services
+5,Stock,ALLE,Allegion,Industrials,Building Products,Industrials
+6,Stock,AMAT,Applied Materials,Information Technology,Semiconductor Equipment,Technology
+7,Stock,AMP,Ameriprise Financial,Financials,Asset Management & Custody Banks,Financial Services
+8,Stock,AMZN,Amazon,Consumer Discretionary,Internet & Direct Marketing Retail,Consumer Cyclical
+9,Stock,AVB,AvalonBay Communities,Real Estate,Residential REITs,Real Estate
+10,Stock,AVY,Avery Dennison,Materials,Paper Packaging,Basic Materials
+11,Stock,AXP,American Express,Financials,Consumer Finance,Financial Services
+12,Stock,BDX,Becton Dickinson,Health Care,Health Care Equipment,Healthcare
+13,Stock,BF-B,Brown-Forman,Consumer Staples,Distillers & Vintners,Consumer Defensive
+14,Stock,BMY,Bristol Myers Squibb,Health Care,Health Care Distributors,Healthcare
+15,Stock,BR,Broadridge Financial Solutions,Information Technology,Data Processing & Outsourced Services,Technology
+16,Stock,CARR,Carrier Global,Industrials,Building Products,Industrial Goods
+17,Stock,CDW,CDW,Information Technology,Technology Distributors,Technology
+18,Stock,CE,Celanese,Materials,Specialty Chemicals,Basic Materials
+19,Stock,CHTR,Charter Communications,Communication Services,Cable & Satellite,Communication Services
+20,Stock,CNC,Centene,Health Care,Managed Health Care,Healthcare
+21,Stock,CNP,CenterPoint Energy,Utilities,Multi-Utilities,Utilities
+22,Stock,COP,ConocoPhillips,Energy,Oil & Gas Exploration & Production,Energy
+23,Stock,CTAS,Cintas Corporation,Industrials,Diversified Support Services,Industrials
+24,Stock,CZR,Caesars Entertainment,Consumer Discretionary,Casinos & Gaming,Consumer Cyclical
+25,Stock,DG,Dollar General,Consumer Discretionary,General Merchandise Stores,Consumer Defensive
+26,Stock,DPZ,Domino's Pizza,Consumer Discretionary,Restaurants,Consumer Cyclical
+27,Stock,DRE,Duke Realty Corp,Real Estate,Industrial REITs,Real Estate
+28,Stock,DXC,DXC Technology,Information Technology,IT Consulting & Other Services,Technology
+29,Stock,META,Meta Platforms,Communication Services,Interactive Media & Services,Technology
+30,Stock,FTV,Fortive,Industrials,Industrial Machinery,Technology
+31,Stock,GOOG,Alphabet (Class C),Communication Services,Interactive Media & Services,Technology
+32,Stock,GPC,Genuine Parts,Consumer Discretionary,Specialty Stores,Consumer Cyclical
+33,Stock,HIG,The Hartford,Financials,Property & Casualty Insurance,Financial Services
+34,Stock,HST,Host Hotels & Resorts,Real Estate,Hotel & Resort REITs,Real Estate
+35,Stock,JPM,JPMorgan Chase,Financials,Diversified Banks,Financial Services
+36,Stock,KR,Kroger,Consumer Staples,Food Retail,Consumer Defensive
+37,Stock,OGN,Organon & Co.,Health Care,Pharmaceuticals,Healthcare
+38,Stock,PG,Procter & Gamble,Consumer Staples,Personal Products,Consumer Defensive
+39,Stock,PPL,PPL,Utilities,Electric Utilities,Utilities
+40,Stock,PRU,Prudential Financial,Financials,Life & Health Insurance,Financial Services
+41,Stock,PYPL,PayPal,Information Technology,Data Processing & Outsourced Services,Financial Services
+42,Stock,RE,Everest Re,Financials,Reinsurance,Financial Services
+43,Stock,ROL,Rollins,Industrials,Environmental & Facilities Services,Industrials
+44,Stock,ROST,Ross Stores,Consumer Discretionary,Apparel Retail,Consumer Cyclical
+45,Stock,UNH,UnitedHealth Group,Health Care,Managed Health Care,Healthcare
+46,Stock,URI,United Rentals,Industrials,Trading Companies & Distributors,Industrials
+47,Stock,V,Visa,Information Technology,Data Processing & Outsourced Services,Financial Services
+48,Stock,VRSK,Verisk Analytics,Industrials,Research & Consulting Services,Industrials
+49,Stock,WRK,WestRock,Materials,Paper Packaging,Basic Materials
+50,Stock,XOM,ExxonMobil,Energy,Integrated Oil & Gas,Energy
+51,ETF,IVV,iShares Core S&P 500 ETF,Equities,Large Cap-North America,General
+52,ETF,IWM,iShares Russell 2000 ETF,Equities,Small Cap-North America,General
+53,ETF,EWU,iShares MSCI United Kingdom ETF,Equities,Large Cap-Europe,General
+54,ETF,EWG,iShares MSCI Germany ETF,Equities,Large Cap-Europe,General
+55,ETF,EWL,iShares Msci Switzerland ETF,Equities,Large Cap-Europe,General
+56,ETF,EWQ,iShares MSCI France ETF,Equities,Large Cap-Europe,General
+57,ETF,IEUS,iShares MSCI Europe Small-Cap ETF,Equities,Small Cap-Europe,General
+58,ETF,EWJ,iShares MSCI Japan ETF,Equities,Large Cap-Asia,General
+59,ETF,EWT,iShares Msci Taiwan ETF,Equities,Large Cap-Asia,General
+60,ETF,MCHI,iShares MSCI China ETF,Equities,Large Cap-Asia,General
+61,ETF,INDA,iShares MSCI India ETF,Equities,Large Cap-Asia,General
+62,ETF,EWY,iShares Msci South Korea ETF,Equities,Large Cap-Asia,General
+63,ETF,EWA,iShares MSCI Australia ETF,Equities,Large Cap-Asia,General
+64,ETF,EWH,iShares MSCI Hong Kong ETF,Equities,Large Cap-Asia,General
+65,ETF,EWZ,iShares Msci Brazil ETF,Equities,Large Cap-South America,General
+66,ETF,EWC,iShares MSCI Canada ETF,Equities,Large Cap-North America,General
+67,ETF,IEMG,iShares Core MSCI Emerging Markets ETF,Equities,Large Cap-Global,General
+68,ETF,LQD,iShares iBoxx $ Inv Grade Corporate Bond ETF,Fixed Income,Credit-US,General
+69,ETF,HYG,iShares iBoxx $ High Yield Corporate Bond ETF,Fixed Income,Credit-US,General
+70,ETF,SHY,iShares 1-3 Year Treasury Bond ETF,Fixed Income,Govt-US,General
+71,ETF,IEF,iShares 7-10 Year Treasury Bond ETF,Fixed Income,Govt-US,General
+72,ETF,TLT,iShares 20 Plus Year Treasury Bond ETF,Fixed Income,Govt-US,General
+73,ETF,SEGA.L,iShares III Public Limited Company - iShares Core Euro Government Bond UCITS ETF,Fixed Income,Govt-Europe,General
+74,ETF,IEAA.L,iShares III Public Limited Company - iShares Core Euro Corporate Bond UCITS ETF,Fixed Income,Credit-Europe,General
+75,ETF,HIGH.L,iShares Public Limited Company - iShares Euro High Yield Corp Bond UCITS ETF,Fixed Income,Credit-Europe,General
+76,ETF,JPEA.L,iShares II Public Limited Company - iShares J.P. Morgan $ Emerging Markets Bond UCITS ETF,Fixed Income,Govt-Global,General
+77,ETF,IAU,iShares Gold Trust,Commodities,Precious Metals,General
+78,ETF,SLV,iShares Silver Trust,Commodities,Precious Metals,General
+79,ETF,GSG,iShares S&P GSCI Commodity-Indexed Trust ETF,Commodities,Diversified Commodity,Basic Materials
+80,ETF,REET,iShares Global REIT ETF,Equities,Sector-Global,Real Estate
+81,ETF,ICLN,iShares Global Clean Energy ETF,Equities,Sector-Global,Energy
+82,ETF,IXN,iShares Global Tech ETF,Equities,Sector-Global,Technology
+83,ETF,IGF,iShares Global Infrastructure ETF,Equities,Sector-Global,General
+84,ETF,IUVL.L,iShares IV Public Limited Company - iShares Edge MSCI USA Value Factor UCITS ETF,Equities,Equity Style-North America,General
+85,ETF,IUMO.L,iShares Edge MSCI USA Momentum Factor ETF,Equities,Equity Style-North America,General
+86,ETF,SPMV.L,iShares VI Public Limited Company - iShares Edge S&P 500 Minimum Volatility UCITS ETF,Equities,Equity Style-North America,General
+87,ETF,IEVL.L,iShares IV Public Limited Company - iShares Edge MSCI Europe Value Factor UCITS ETF,Equities,Equity Style-Europe,General
+88,ETF,IEFM.L,iShares IV Public Limited Company - iShares Edge MSCI Europe Momentum Factor UCITS ETF,Equities,Equity Style-Europe,General
+89,ETF,MVEU.L,iShares VI Public Limited Company - iShares Edge MSCI Europe Minimum Volatility UCITS ETF,Equities,Equity Style-Europe,General
+90,ETF,XLK,Technology Select Sector SPDR Fund,Equities,Sector-US,Technology
+91,ETF,XLF,Financial Select Sector SPDR Fund,Equities,Sector-US,Financial Services
+92,ETF,XLV,Health Care Select Sector SPDR Fund,Equities,Sector-US,Healthcare
+93,ETF,XLE,Energy Select Sector SPDR Fund,Equities,Sector-US,Energy
+94,ETF,XLY,Consumer Discretionary Select Sector SPDR Fund,Equities,Sector-US,Consumer Cyclical
+95,ETF,XLI,Industrial Select Sector SPDR Fund,Equities,Sector-US,Industrials
+96,ETF,XLC,Communication Services Select Sector SPDR Fund,Equities,Sector-US,Communication Services
+97,ETF,XLU,Utilities Select Sector SPDR Fund,Equities,Sector-US,Utilities
+98,ETF,XLP,Consumer Staples Select Sector SPDR Fund,Equities,Sector-US,Consumer Defensive
+99,ETF,XLB,Materials Select Sector SPDR Fund,Equities,Sector-US,Basic Materials
+100,ETF,VXX,iPath Series B S&P 500 VIX Short-Term Futures ETN,Volatility,US,General

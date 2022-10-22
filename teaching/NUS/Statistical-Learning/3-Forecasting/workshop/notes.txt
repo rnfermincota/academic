@@ -1,0 +1,3 @@
+> # Option 2 - Local Spark Session> library(sparklyr)> # sparklyr::spark_install()> sc <- spark_connect(master = "local[12]")* Using Spark: 2.4.3Error: Java 11 is only supported for Spark 3.0.0+
+https://spark.rstudio.com/get-started/#install-spark-locally
+sparklyr::spark_install(version="3.0.0")

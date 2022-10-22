@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Wed Oct 12 06:01:25 SGT 2022:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0183-c911-1c9b-000005836320 
+on database directory memory:/Users/nico/Dropbox/TEACHING/Schools/1_NUS/Courses/Material/2022/Private/1-modeltime/wip/todo/Shiny/databaseName=metastore_db with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@7aec35a 
+Loaded from file:/Users/nico/spark/spark-3.0.0-bin-hadoop3.2/jars/derby-10.12.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=11.0.5+10-LTS
+user.dir=/Users/nico/Dropbox/TEACHING/Schools/1_NUS/Courses/Material/2022/Private/1-modeltime/wip/todo/Shiny
+os.name=Mac OS X
+os.arch=x86_64
+os.version=10.16
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

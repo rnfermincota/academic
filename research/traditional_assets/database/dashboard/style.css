@@ -1,0 +1,18 @@
+.navbar-inverse {
+    background-color: #073642;
+    border-color: #073642;
+    
+  }
+
+  .navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:hover, .navbar-inverse .navbar-nav>.active>a:focus {
+    color: #ffffff;
+    background-color: #008caf;
+}
+
+
+
+  
+  .chart-title {
+      font-size: 25px;
+      color: black;
+  }

@@ -1,0 +1,294 @@
+---
+title: "Time Series and DCF Analysis in R"
+author: "Karl Polen"
+date: "9/20/2020"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE,echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE,message=FALSE)
+library(shiny)
+library(shinydashboard)
+library(tidyverse)
+library(readxl)
+library(purrr)
+library(lubridate)
+library(xts)
+library(timetk)
+library(asrsMethods)
+library(knitr)
+library(DT)
+library(leaflet)
+library(plotly)
+source("apt_functions.R")
+```
+
+## What we will cover in this presentation
+
+- Some background discussion on techniques and goals for DCF analysis of real estate projects
+- Techniques for doing cash flow analysis using the XTS time series package illustrated by a simple example of an investment in a rental house
+- Presentation of a Shiny app that shows the analysis of the Modera Decatur project 
+
+
+## What's inside the box?
+
+Materials for this lecture are found at https://github.com/karlp-asrs/nus_apartment inside the apt_app folder
+
+- This slide presentation and the RMD that generated it
+- apt.function.R is a set of functions to analyze apartment development projects
+- modera_decatur.xlsx is the configuration file for the Modera Decatur project (you can modify this file to change the parameters or create a completely new project)
+- app.R is a shiny app that shows the results of the analysis and allows you to perform sensitivity to analysis to key risk factors
+
+## DCF analysis for real estate development projects
+
+- The purpose of real estate underwriting is to grasp the likelihood that a project will be successful and to understand risks that threaten that
+- The DCF output summarizes the results of that analysis in a way that allows you to calculate financial metrics
+- Let me repeat, the DCF is a necessary technique but it isn't the analysis.  The apparent 'scientificness' of DCF analysis can be a deceptive distraction.
+- The real analysis happens before you start the DCF in understanding the market and competition for your project and the feasibility of the construction timeline and budgets.
+
+## The risks in a real estate development project -- predevelopment phase
+
+- The predevelopment process consists of obtaining necessary governmental approvals
+- These approvals can result in a change in the scope of a project with potential impacts to both density and cost
+- An experienced manager understands this process and should be expected to mitigate negative impacts of changes
+- Delays are common as a result of these negotiations
+
+## Construction phase risks
+
+- During predevelopment, management will have completed plans for the project and obtained bids for the work
+- Experienced managers should be expected to deliver projects on time and on budget
+- Failures in this regard are typically the result of poor management and not indicative of the inherent risks and difficulty of construction
+- Nevertheless, even with competent management external events such as natural disasters can impact supply chains causing delays
+- A DCF analysis should consider the impacts of possible delays and cost overruns
+
+## Leaseup phase risk
+
+- The development process takes several years and there is inherent risk that markets will evolve by the time your project is ready for occupancy
+- Your analysis should consider that rents and pace of leaseup may be different from the initial underwriting
+- Model a balance sheet to show the viability of your financial structure under stress
+
+## Capital markets risk
+
+- Evolving capital markets can impact your project
+- The key phase of risk is in transition from construction financing to permanent financing
+- If a recession hits while your project is delivered to the market, this is a challenge and one of the bigger sources of bankruptcies in real estate
+- Analysis doesn't help solve this.  Sponsors and investors need to work collaboratively to deal with this dynamic if it happens in order to avoid destruction of capital.
+- Use leverage prudently and maintain appropriate reserves
+
+## DCF analysis in R -- the basics
+
+- Use `xts` time series objects to record cash flow amounts and dates.  For example, you buy an asset for \$100 and sell it for \$150 18 months later.
+
+```{r}
+buydate=as.Date("2016-01-01")
+(buy=xts(-100,buydate))
+(sell=xts(150,buydate+months(18)))
+```
+
+## Time series arithmetic
+
+- you can do calculations on xts time series, but xts requires a match on the time attribute.  For example, `buy+sell` produces `zilde` because there is no match in the date.
+
+```{r}
+buy+sell
+```
+
+On the other hand, this works, sort of. . .
+
+```{r}
+sum(buy,sell,na.rm=TRUE)
+```
+
+## Assembling time series in a matrix
+
+- The "go-to" technique is to assemble your time series as a matrix with `cbind` and then use `rowSums`.  I use this technique a lot because it allows you to assemble and visualize data in logical subsets.  It also allows you to deal with data of indeterminate length as illustrated with the following code. 
+
+```{r}
+cflist=list(Buy=buy,Sell=sell)
+cfmatrix=do.call(cbind,cflist) 
+cfmatrix=cbind(cfmatrix, xts(rowSums(cfmatrix,na.rm=TRUE),index(cfmatrix)))
+names(cfmatrix)=c(names(cflist),"Total_CF")
+cfmatrix
+```
+
+## Analyzing a rental house investment
+
+- I will show code to analyze a rental house using the XTS package in R
+- Here are key assumptions:
+  * Buy the house for 300,000 with a 250,000 mortgage at 3% with 30 yr amortization
+  * Renovation of 20,000 before you start leasing
+  * Rent is 20,000 per year and increases 4% per year
+  * Maintenance is weekly pool and landscape service at 50 per week
+  * Tenant pays utilities
+  * Insurance is 2000 paid annually at closing and each anniversary
+  * Property taxes are 3,000 paid semi-annually in May and November
+  * Market value of rental houses is 15 times annual rent
+  
+## Buy the house
+
+```{r}
+start_date=as.Date("2020-08-01")
+house_purchase_price=300000
+buy_house=xts(-house_purchase_price,start_date)
+mortg_proceeds=xts(250000,start_date)
+#loanamort is a function for loan calcs from asrsMethods
+mortg_vars=loanamort(r=.03,bal0=250000,n=30,freq=12,apr=TRUE)  
+mort_dates=start_date+months(0:360)
+mortg_bal=xts(c(250000,mortg_vars$bal),mort_dates)
+mortg_int=xts(c(0,-mortg_vars$int),mort_dates)
+mortg_pmt=xts(c(0,rep(-mortg_vars$pmt,360)),mort_dates)
+```
+  
+## Renovate it
+
+```{r}
+renovation_amt=20000
+renovation=xts(rep((-renovation_amt/6),6),start_date+months(1:6))
+```
+
+## Lease it
+
+```{r}
+market_rent=(20000/12)*exp(cumsum(c(0,rep(log(1+(.04/12)),360)))) 
+market_rent=xts(market_rent,start_date+months(0:360))
+annual_rent=market_rent[6+(12*(0:11))]
+monthly_rent=rep(annual_rent,rep(12,length(annual_rent)))
+monthly_rent=xts(monthly_rent,start_date+months(5)+
+                   months(1:length(monthly_rent))+
+                   days(5))  #note rent received on 5th day of month
+```
+
+## Expenses
+
+```{r}
+utilities_renovation=xts(rep(-300,6),start_date+months(1:6))
+weekly_maint=xts(rep(-50,12*52),start_date+days(7*1:(12*52)))
+insurance=xts(rep(-2000,12),start_date+years(0:11))
+first_tax_date=ymd(paste0(year(start_date),"-05-15"))+months(c(0,6))
+first_tax_date=first_tax_date[first_tax_date>start_date]
+property_tax=xts(rep(-1500,24),first_tax_date[1]+months(6*(0:23)))
+```              
+
+
+## Tax Calcs
+``` {r}
+# house gets depreciation tax shield with useful life of 30 years
+bldg_depreciation=xts(rep(-house_purchase_price/360,360),
+                      start_date+months(0:359))
+# renovation get depreciation tax shield with useful life of 5 years
+renov_depreciation=xts(rep(-renovation_amt/60,60),
+                       start_date+months(6)+months(1:60))
+```
+
+## Calculate value of house 
+```{r}
+house_value=market_rent*12*15
+```
+
+## Create a convenience function for displaying annual statements
+
+```{r}
+show_annual=function(xtsmat,nyear=6,isbs=FALSE) {
+  xtsmat=apply(xtsmat,2,nona) # get rid of NAs
+  df=as.data.frame(xtsmat)
+  xtsdates=as.Date(rownames(df))
+  rownames(df)=NULL
+  years=year(xtsdates)
+  year1=years[1]
+  lastyear=tail(years,1)
+  yearlabel=year1:lastyear
+  if (isbs) {
+    dfy=aggregate(df,by=list(years),FUN=lastinvec)} else {
+    dfy=aggregate(df,by=list(years),FUN=sum)  }
+  dfy$Group.1=NULL
+  dfy=data.frame(Year=yearlabel,dfy)
+  return(round(dfy[1:nyear,]))
+}
+```
+
+## Show operating cash flow
+
+```{r}
+opcfmat=cbind(monthly_rent,utilities_renovation,
+              weekly_maint,insurance,property_tax)
+total_opcf=xts(rowSums(opcfmat,na.rm=TRUE),index(opcfmat))
+opcfmat=cbind(opcfmat,total_opcf)
+colnames(opcfmat)=c("Rent","Utilities","Landscape/pool","Insurance",
+                    "Property_tax","Total_OPCF")
+show_annual(opcfmat)
+```
+
+
+## Show total cash flow
+
+```{r}
+cfmat=cbind(total_opcf,buy_house,mortg_proceeds,mortg_pmt,renovation)
+total_cfmat=rowSums(cfmat,na.rm=TRUE)
+cfmat=cbind(cfmat,total_cfmat)
+colnames(cfmat)=c("Op_CF","House_pur","Mort_proc",
+                  "Mort_pmt","Renov","Total")
+show_annual(cfmat)
+```
+
+## Show taxable income
+
+```{r}
+taxmat=cbind(total_opcf,mortg_int,bldg_depreciation,renov_depreciation)
+total_tax=rowSums(taxmat,na.rm=TRUE)
+taxmat=cbind(taxmat,total_tax)
+colnames(taxmat)=cbind("Operating_CF","Mort_Interest","Bldg_depr",
+                       "Reno_depr","Txbl_Inc")
+show_annual(taxmat)
+```
+
+## Show balance sheet and growth of net worth
+
+```{r}
+owner_eq=cbind(house_value,-mortg_bal)
+owner_eq=rowSums(owner_eq,na.rm=TRUE)
+bsmat=cbind(house_value,mortg_bal,owner_eq)
+colnames(bsmat)=c("House_Value","Loan_Balance","Owner_Equity")
+show_annual(bsmat,isbs=TRUE)
+```
+
+## calculate IRR after 5 years
+
+```{r}
+end_date=start_date+years(5)
+totalcf=cfmat[,"Total"]
+irrcf=totalcf[index(totalcf)<=end_date]
+irrval=bsmat[,"Owner_Equity"][end_date]
+irrcfmat=cbind(irrcf,irrval)
+irrcf_w_val=xts(rowSums(irrcfmat,na.rm=TRUE),index(irrcfmat))
+irr.z(irrcf_w_val)
+```
+
+## Observations and recommendations
+
+- Record the cash flows using their known patterns as daily events
+- Maintain that detail for calculations, but summarize into calendar periods for presentation
+- Use detail where you have it, but don't invent it when you are guessing
+- Use broad categories for allowances and estimates
+- The best model is the briefest model that accomplishes its purpose
+
+## Present results in standard financial statement format
+
+- This will facilitate communication by conforming to reporting norms
+- It will facilitate comparison of underwriting forecasts to actual results
+- The cash flow is necessary for investment metrics
+- You need a balance sheet to assess viability of financial structure
+- Taxable investors need an income statement to understand tax impacts
+- Institutional investors need an income statement to decompose performance between operating income and appreciation
+
+## The Modera Decatur project
+
+A shiny app has been provided to illustrate this analysis
+
+## Additional resources
+
+This code uses the `asrsMethods` package which is available at github. The following code will install it. 
+
+`devtools::install_github("karlp-asrs/asrsMethods/asrsMethods")`
+
+Much more information on analyzing real estate and private equity is found at my github site https://karlp-asrs.github.io/
+

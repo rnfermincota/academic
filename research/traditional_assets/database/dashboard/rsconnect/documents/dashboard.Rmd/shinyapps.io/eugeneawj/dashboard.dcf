@@ -1,0 +1,13 @@
+name: dashboard
+title: dashboard
+username:
+account: eugeneawj
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7315670
+bundleId: 6407433
+url: https://eugeneawj.shinyapps.io/dashboard/
+when: 1665900196.03224
+lastSyncTime: 1665900196.03225
+asMultiple: FALSE
+asStatic: FALSE
