@@ -1,4 +1,4 @@
-NUS DBA4761’s repository: https://github.com/rnfermincota/academic/tree/main/teaching/NUS 
+NUS DBA4761’s repository
 
 Data-Engineering
 [1] Valuation -> Applying the tidy data principles to the Saudi Aramco IPO Valuation.
