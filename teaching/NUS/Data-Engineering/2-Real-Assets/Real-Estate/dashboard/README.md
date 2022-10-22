@@ -1,3 +1,1 @@
-# nus_apartment
-
-Apartment underwriting and modeling presentation.
+Karl Polen, Chief Investment Officer at the Arizona State Retirement System, has been kind enough to teach a guest lecture https://www.youtube.com/watch?v=Y8pgewOD1cc, where students walk away with recipes, tips, and tricks to deploy cash flow models, and interactive dashboards to develop a competitive edge in real assets investing.
