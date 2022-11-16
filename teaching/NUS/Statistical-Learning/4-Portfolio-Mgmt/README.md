@@ -6,4 +6,5 @@ Website: https://mofc.unic.ac.cy/the-m6-competition/
 
 FAQ: https://m6competition.com/Faq
 
-Post: https://www.linkedin.com/posts/rnfc_dba4761-m6-instructions-activity-6980077385408802816-SIVE
+Posts: https://www.linkedin.com/posts/rnfc_dba4761-m6-instructions-activity-6980077385408802816-SIVE
+https://www.linkedin.com/posts/rnfc_tidymodels-activity-6992704332903198720-gKaI
