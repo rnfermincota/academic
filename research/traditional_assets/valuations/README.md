@@ -9,6 +9,7 @@ Picking stocks with high return on invested capital and avoiding those without e
 According to Buffett, the key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage. Pricing power, always a positive for companies that can sustain it, may be a crucial competitive advantage in the year ahead. Inflation has surfaced across many global economies, and there are signs that it could linger in the coming months. Rising costs can erode a company's profit margins and, ultimately, investor returns. But companies with clear, sustainable pricing power can protect their profit margins by passing those costs along to customers. As a friend once told me: "compounding is just returns to the power of time. Time is the exponent that does the heavy lifting, and the common denominator of almost all big fortunes is not returns, it is endurance and longevity."
 
 References:
-Capital allocation via cost of capital: https://www.linkedin.com/pulse/capital-allocation-via-cost-rafael-nicolas-fermin-cota
 
-Value Investing in a New World Order: https://www.linkedin.com/pulse/value-investing-new-world-order-rafael-nicolas-fermin-cota
+[1] Capital allocation via cost of capital: https://www.linkedin.com/pulse/capital-allocation-via-cost-rafael-nicolas-fermin-cota
+
+[2] Value Investing in a New World Order: https://www.linkedin.com/pulse/value-investing-new-world-order-rafael-nicolas-fermin-cota
