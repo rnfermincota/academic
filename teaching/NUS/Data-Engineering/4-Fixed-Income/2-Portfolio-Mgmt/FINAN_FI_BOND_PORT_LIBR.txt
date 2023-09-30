@@ -1,0 +1,1997 @@
+Option Compare Text  'Uppercase letters to be equivalent to lowercase letters.
+Option Explicit     'Requires that all variables to be declared explicitly.
+Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
+                    'default first index of arrays.
+
+'**********************************************************************************
+'**********************************************************************************
+'FUNCTION      : BOND_PORT_ANALYSIS_FUNC
+
+'DESCRIPTION   : This system provides a powerful tool for tracking a bond portfolio.
+'Analytic measures for each bond in the portfolio such as Duration, Bond Risk,
+'and Sensitivity to changes in interest rates.
+
+'LIBRARY       : BOND
+'GROUP         : PORT
+'ID            : 001
+'AUTHOR        : RAFAEL NICOLAS FERMIN COTA
+'LAST UPDATE   : 17/09/2022
+'**********************************************************************************
+'**********************************************************************************
+
+Function BOND_PORT_ANALYSIS_FUNC(ByRef VALOR_RNG As Variant, _
+ByRef MOODY_RATING_RNG As Variant, _
+ByRef SP_RATING_RNG As Variant, _
+ByRef INSURANCE_NAME_RNG As Variant, _
+ByRef CUSIP_RNG As Variant, _
+ByRef ISSUE_NAME_RNG As Variant, _
+ByRef BOND_TYPE_RNG As Variant, _
+ByRef COUPON_RNG As Variant, _
+ByRef FREQUENCY_RNG As Variant, _
+ByRef MATURITY_RNG As Variant, _
+ByRef CALL_PRICE_RNG As Variant, _
+ByRef CALL_DATE_RNG As Variant, _
+ByRef PURCHASE_DATE_RNG As Variant, _
+ByRef PURCHASE_PRICE_RNG As Variant, _
+ByRef PURCHASE_QUANTITY_RNG As Variant, _
+ByRef PURCHASE_FEES_RNG As Variant, _
+ByRef CURRENT_PRICE_RNG As Variant, _
+Optional ByRef MARKET_YIELDS_RNG As Variant, _
+Optional ByRef CREDIT_AGENCIES_RNG As Variant, _
+Optional ByRef PORT_BOND_TYPES_RNG As Variant, _
+Optional ByRef PORT_MATURITIES_RNG As Variant, _
+Optional ByRef PORT_CREDIT_QUALITIES_RNG As Variant, _
+Optional ByVal DELTA_VAL As Double = 0.01, Optional ByVal REBALANCING_SLACK As Double = 1000, _
+Optional ByVal SETTLEMENT As Date = 0, Optional ByRef GUESS_YIELD As Variant = 0.5, _
+Optional ByRef COUNT_BASIS As Variant = 0, Optional ByVal OUTPUT As Integer = 0)
+
+'----------------------------------------------------------------------------
+'SETTLEMENT: date to base bond price/yield/maturity calculations
+'on. The default value is a reference to the built-in function Today().
+'If you want to compute values relative to another date (such as settlement
+'dates), change it and all calculations will be based off the new date.
+'----------------------------------------------------------------------------
+'INSURANCE_NAME_RNG:
+'This vector is used to populate the validation drop-down for the insurance
+'companies.
+'"MBIA"
+'"FSA"
+'"AMBAC"
+'"FDIC"
+'"None"
+'----------------------------------------------------------------------------
+'DELTA_VAL: 100 * Basis Points (e.g., 100 basis points)
+'----------------------------------------------------------------------------
+'MARKET_YIELDS_RNG:
+'General bond market maturity and yield data to support calculations on
+'Bond Portfolio. Yields should be for AAA bonds...
+'----------------------------------------------------------------------------
+'C1: Maturity
+'C2: Agency Yield
+'C3: Corporate Yield
+'C4: Muni Yield
+'C5: TIPS Yield
+'C6: Treasury Yield
+'The data entered into MARKET_YIELDS_RNG could be interpolated and then
+'used to produce a simulated "market yield" value for a bond
+'with a given maturity.  This yield value is an estimate of the yield on a
+'generic security with a given maturity in years.
+
+'Each bond's actual yield can then be compared with this "market" yield.
+'Note: These calculations don't adjust for differences in bond quality so
+'if the market yield curve data is for aaa and the bond being compared
+'is bbb, the results will not be valid.
+
+'For current data
+'http://www.bloomberg.com/markets/rates/index.html
+'http://www.bondsonline.com/asp/news/composites.html
+'http://www.bondtalk.com/global.cfm?S=charts&SS=bmyieldsummary
+'http://bonds.yahoo.com/rates.html
+
+'----------------------------------------------------------------------------
+'REBALANCING_SLACK: This value is used in the Bond Maturity, Bond Type,
+'and Credit Quality. This value creates some "slack" for the rebalancing
+'algorithm (between desired percent and actual percent) to reduce clutter
+'in the cases where the difference between the target percent allocation
+'and the current percent allocation is small.
+
+'For example, if the difference between the desired percent and the actual
+'percent is only a few hundred dollars, the rebalancing slack setting can
+'be used to blank out the Adjustment. This allows the entry with significant
+'differences to be more prominent.
+'----------------------------------------------------------------------------
+'COUNT_BASIS:
+'This setting is used by several bond calculation functions throughout the
+'algorithm. The built-in bond functions require this value to be set.
+'Most bonds sold in the U.S. use the 30/360 (default) day count method.
+'List of supported Day Count methods:
+'30/360 (Default); Actual/actual; Actual/360; Actual/365; European 30 / 360
+'(Day Count Type) --> These are in order relative to the numerical value that
+'must be passed into the bond routines for day-count-method.
+'----------------------------------------------------------------------------
+'DESIRED_PERCENT_X_Y:
+'Enter the desired percent of the portfolio for each maturity range to construct
+'a ladder. For example, the entry for a maturity of 10 years shows values for
+'all bonds in the portfolio that mature between 7 years (the previous entry)
+'and 10 years. Set the percent for this entry to the percent of the portfolio
+'that you desire to mature between 7 and 10 years.
+'----------------------------------------------------------------------------
+
+Dim h() As Long
+Dim i As Long
+Dim j As Long
+Dim k As Long
+Dim l As Long
+Dim m As Long
+Dim n As Long
+
+Dim hh As Long
+Dim ii As Long
+Dim jj As Long
+Dim kk As Long
+Dim ll As Long
+Dim mm As Long
+Dim nn As Long
+
+Dim NROWS As Long
+Dim NCOLUMNS As Long
+
+Dim Y_VAL As Double
+Dim P_VAL As Double
+Dim S_VAL As Date
+Dim M_VAL As Date
+Dim C_VAL As Double
+Dim F_VAL As Integer
+Dim R_VAL As Double
+Dim B_VAL As Integer
+Dim G_VAL As Double
+
+Dim NA_STR As String
+Dim NR_INT As Integer
+Dim NR_STR As String
+
+Dim FIND_STR As String
+Dim LOOK_STR As String
+
+Const MULT1_VAL As Double = 10 '100 prices to $1,000 mult
+Const MULT2_VAL As Double = 100 'Coupon Rate to %
+Const MULT3_VAL As Double = 1000 'Adj Quantity to $1,000 mult
+
+'Static HEADINGS0_STR As String
+Dim HEADINGS0_STR As String
+Dim HEADINGS1_STR As String
+Dim HEADINGS_ARR() As String
+
+Dim TEMP0_VAL As Variant
+Dim TEMP1_VAL As Variant
+Dim TEMP2_VAL As Variant
+
+Dim DATE1_VAL As Date
+Dim DATE2_VAL As Date
+
+Dim TEMP0_MATRIX As Variant
+Dim TEMP1_MATRIX As Variant
+Dim TEMP2_MATRIX As Variant
+Dim TEMP3_MATRIX As Variant
+Dim TEMP4_MATRIX As Variant
+
+Dim PORT_BOND_TYPES_FLAG As Boolean
+Dim PORT_BOND_TYPES_MATRIX As Variant
+
+Dim PORT_MATURITIES_FLAG As Boolean
+Dim PORT_BOND_MATURITIES_MATRIX As Variant
+
+Dim PORT_CREDIT_QUALITIES_FLAG As Boolean
+Dim PORT_CREDIT_QUALITIES_MATRIX As Variant
+
+Dim CREDIT_AGENCIES_FLAG As Boolean
+Dim CREDIT_AGENCIES_MATRIX As Variant
+
+Dim MARKET_YIELDS_FLAG As Boolean
+Dim MARKET_YIELDS_MATRIX As Variant
+
+Dim VALOR_VECTOR As Variant
+Dim MOODY_RATING_VECTOR As Variant
+Dim SP_RATING_VECTOR As Variant
+Dim INSURANCE_NAME_VECTOR As Variant
+Dim CUSIP_VECTOR As Variant
+Dim ISSUE_NAME_VECTOR As Variant
+Dim BOND_TYPE_VECTOR As Variant
+Dim COUPON_VECTOR As Variant
+Dim FREQUENCY_VECTOR As Variant
+Dim MATURITY_VECTOR As Variant
+Dim CALL_PRICE_VECTOR As Variant
+Dim CALL_DATE_VECTOR As Variant
+Dim PURCHASE_DATE_VECTOR As Variant
+Dim PURCHASE_PRICE_VECTOR As Variant
+Dim PURCHASE_QUANTITY_VECTOR As Variant
+Dim PURCHASE_FEES_VECTOR As Variant
+Dim CURRENT_PRICE_VECTOR As Variant
+Dim COUNT_BASIS_VECTOR As Variant
+Dim GUESS_YIELD_VECTOR As Variant
+
+Dim tolerance As Double
+Dim epsilon As Double
+
+On Error GoTo ERROR_LABEL
+
+NA_STR = "N/A": NR_STR = "NR"
+tolerance = 10 ^ -15: epsilon = 1E-07
+If SETTLEMENT = 0 Then: SETTLEMENT = Now()
+SETTLEMENT = DateSerial(Year(SETTLEMENT), Month(SETTLEMENT), Day(SETTLEMENT))
+
+VALOR_VECTOR = VALOR_RNG
+If UBound(VALOR_VECTOR, 1) = 1 Then
+    VALOR_VECTOR = MATRIX_TRANSPOSE_FUNC(VALOR_VECTOR)
+End If
+
+MOODY_RATING_VECTOR = MOODY_RATING_RNG
+If UBound(MOODY_RATING_VECTOR, 1) = 1 Then
+    MOODY_RATING_VECTOR = MATRIX_TRANSPOSE_FUNC(MOODY_RATING_VECTOR)
+End If
+
+SP_RATING_VECTOR = SP_RATING_RNG
+If UBound(SP_RATING_VECTOR, 1) = 1 Then
+    SP_RATING_VECTOR = MATRIX_TRANSPOSE_FUNC(SP_RATING_VECTOR)
+End If
+
+INSURANCE_NAME_VECTOR = INSURANCE_NAME_RNG
+If UBound(INSURANCE_NAME_VECTOR, 1) = 1 Then
+    INSURANCE_NAME_VECTOR = MATRIX_TRANSPOSE_FUNC(INSURANCE_NAME_VECTOR)
+End If
+
+CUSIP_VECTOR = CUSIP_RNG
+If UBound(CUSIP_VECTOR, 1) = 1 Then
+    CUSIP_VECTOR = MATRIX_TRANSPOSE_FUNC(CUSIP_VECTOR)
+End If
+
+ISSUE_NAME_VECTOR = ISSUE_NAME_RNG
+If UBound(ISSUE_NAME_VECTOR, 1) = 1 Then
+    ISSUE_NAME_VECTOR = MATRIX_TRANSPOSE_FUNC(ISSUE_NAME_VECTOR)
+End If
+'------------------------------------------------------------------------------
+NROWS = UBound(ISSUE_NAME_VECTOR, 1)
+'------------------------------------------------------------------------------
+If IsArray(COUNT_BASIS) = True Then
+    COUNT_BASIS_VECTOR = COUNT_BASIS
+    If UBound(COUNT_BASIS_VECTOR, 1) = 1 Then
+        COUNT_BASIS_VECTOR = MATRIX_TRANSPOSE_FUNC(COUNT_BASIS_VECTOR)
+    End If
+Else
+    If COUNT_BASIS = "" Then: COUNT_BASIS = 0
+    ReDim COUNT_BASIS_VECTOR(1 To NROWS, 1 To 1)
+    For i = 1 To NROWS: COUNT_BASIS_VECTOR(i, 1) = COUNT_BASIS: Next i
+End If
+'------------------------------------------------------------------------------
+If IsArray(GUESS_YIELD) = True Then
+    GUESS_YIELD_VECTOR = GUESS_YIELD
+    If UBound(GUESS_YIELD_VECTOR, 1) = 1 Then
+        GUESS_YIELD_VECTOR = MATRIX_TRANSPOSE_FUNC(GUESS_YIELD_VECTOR)
+    End If
+Else
+    If GUESS_YIELD = 0 Or GUESS_YIELD = "" Then: GUESS_YIELD = 0.5
+    ReDim GUESS_YIELD_VECTOR(1 To NROWS, 1 To 1)
+    For i = 1 To NROWS: GUESS_YIELD_VECTOR(i, 1) = GUESS_YIELD: Next i
+End If
+'------------------------------------------------------------------------------
+BOND_TYPE_VECTOR = BOND_TYPE_RNG
+If UBound(BOND_TYPE_VECTOR, 1) = 1 Then
+    BOND_TYPE_VECTOR = MATRIX_TRANSPOSE_FUNC(BOND_TYPE_VECTOR)
+End If
+
+COUPON_VECTOR = COUPON_RNG
+If UBound(COUPON_VECTOR, 1) = 1 Then
+    COUPON_VECTOR = MATRIX_TRANSPOSE_FUNC(COUPON_VECTOR)
+End If
+
+FREQUENCY_VECTOR = FREQUENCY_RNG
+If UBound(FREQUENCY_VECTOR, 1) = 1 Then
+    FREQUENCY_VECTOR = MATRIX_TRANSPOSE_FUNC(FREQUENCY_VECTOR)
+End If
+
+MATURITY_VECTOR = MATURITY_RNG
+If UBound(MATURITY_VECTOR, 1) = 1 Then
+    MATURITY_VECTOR = MATRIX_TRANSPOSE_FUNC(MATURITY_VECTOR)
+End If
+
+CALL_PRICE_VECTOR = CALL_PRICE_RNG
+If UBound(CALL_PRICE_VECTOR, 1) = 1 Then
+    CALL_PRICE_VECTOR = MATRIX_TRANSPOSE_FUNC(CALL_PRICE_VECTOR)
+End If
+
+CALL_DATE_VECTOR = CALL_DATE_RNG
+If UBound(CALL_DATE_VECTOR, 1) = 1 Then
+    CALL_DATE_VECTOR = MATRIX_TRANSPOSE_FUNC(CALL_DATE_VECTOR)
+End If
+
+PURCHASE_DATE_VECTOR = PURCHASE_DATE_RNG
+If UBound(PURCHASE_DATE_VECTOR, 1) = 1 Then
+    PURCHASE_DATE_VECTOR = MATRIX_TRANSPOSE_FUNC(PURCHASE_DATE_VECTOR)
+End If
+
+PURCHASE_PRICE_VECTOR = PURCHASE_PRICE_RNG
+If UBound(PURCHASE_PRICE_VECTOR, 1) = 1 Then
+    PURCHASE_PRICE_VECTOR = MATRIX_TRANSPOSE_FUNC(PURCHASE_PRICE_VECTOR)
+End If
+
+PURCHASE_QUANTITY_VECTOR = PURCHASE_QUANTITY_RNG
+If UBound(PURCHASE_QUANTITY_VECTOR, 1) = 1 Then
+    PURCHASE_QUANTITY_VECTOR = MATRIX_TRANSPOSE_FUNC(PURCHASE_QUANTITY_VECTOR)
+End If
+
+PURCHASE_FEES_VECTOR = PURCHASE_FEES_RNG
+If UBound(PURCHASE_FEES_VECTOR, 1) = 1 Then
+    PURCHASE_FEES_VECTOR = MATRIX_TRANSPOSE_FUNC(PURCHASE_FEES_VECTOR)
+End If
+
+CURRENT_PRICE_VECTOR = CURRENT_PRICE_RNG
+If UBound(CURRENT_PRICE_VECTOR, 1) = 1 Then
+    CURRENT_PRICE_VECTOR = MATRIX_TRANSPOSE_FUNC(CURRENT_PRICE_VECTOR)
+End If
+
+ReDim h(0 To 3): h(0) = 76
+'------------------------------------------------------------------------------
+If IsArray(MARKET_YIELDS_RNG) = True Then 'Perfect
+    MARKET_YIELDS_MATRIX = MARKET_YIELDS_RNG
+    MARKET_YIELDS_FLAG = True
+Else
+    MARKET_YIELDS_FLAG = False
+End If
+'------------------------------------------------------------------------------
+If IsArray(PORT_MATURITIES_RNG) Then 'Perfect
+    PORT_BOND_MATURITIES_MATRIX = PORT_MATURITIES_RNG
+    h(1) = UBound(PORT_BOND_MATURITIES_MATRIX, 1)
+    PORT_MATURITIES_FLAG = True
+Else
+    PORT_MATURITIES_FLAG = False
+    h(1) = 0
+End If
+'--------------------------------------------------------------------------------
+If IsArray(PORT_BOND_TYPES_RNG) = True Then 'Perfect
+'Edit the table to enter tax rates for each supported bond type.
+'Include federal and state where applicable.
+    PORT_BOND_TYPES_FLAG = True
+    PORT_BOND_TYPES_MATRIX = PORT_BOND_TYPES_RNG
+    h(2) = UBound(PORT_BOND_TYPES_MATRIX, 1)
+    j = h(2)
+Else
+    PORT_BOND_TYPES_FLAG = False
+    h(2) = 0
+End If
+
+If IsArray(PORT_CREDIT_QUALITIES_RNG) = True Then
+    PORT_CREDIT_QUALITIES_FLAG = True
+    PORT_CREDIT_QUALITIES_MATRIX = PORT_CREDIT_QUALITIES_RNG
+    h(3) = UBound(PORT_CREDIT_QUALITIES_MATRIX, 1)
+Else
+    PORT_CREDIT_QUALITIES_FLAG = False
+    h(3) = 0
+End If
+'--------------------------------------------------------------------------------
+If IsArray(CREDIT_AGENCIES_RNG) = True Then 'Fix dimension here!!!
+    CREDIT_AGENCIES_FLAG = True
+    CREDIT_AGENCIES_MATRIX = CREDIT_AGENCIES_RNG
+    j = UBound(CREDIT_AGENCIES_MATRIX, 1)
+    For i = 1 To j: CREDIT_AGENCIES_MATRIX(i, 1) = Trim(CREDIT_AGENCIES_MATRIX(i, 1)): Next i
+    If IsNumeric(CREDIT_AGENCIES_MATRIX(j, 4)) = True Then NR_INT = CREDIT_AGENCIES_MATRIX(j, 4) Else NR_INT = 8 'Unknown rating or unrated bond
+Else
+    CREDIT_AGENCIES_FLAG = False
+    NR_INT = 8
+End If
+
+'--------------------------------------------------------------------------------
+GoSub HEADINGS_LINE
+'--------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 1) = "Portfolio"
+For j = 6 To 7: TEMP0_MATRIX(NROWS + 1, j) = 0: Next j
+TEMP0_MATRIX(NROWS + 1, 21) = 0
+For j = 30 To 31: TEMP0_MATRIX(NROWS + 1, j) = 0: Next j
+For j = 36 To 59: TEMP0_MATRIX(NROWS + 1, j) = 0: Next j
+TEMP0_MATRIX(NROWS + 1, 74) = 0
+
+hh = h(0)
+ii = hh + 1
+jj = hh + h(1) + h(2) + h(3)
+For j = ii To jj: TEMP0_MATRIX(NROWS + 1, j) = 0: Next j
+nn = hh + h(1) * 4 + h(2) * 5 + h(3) * 4 + 1 'Section XIX
+TEMP0_MATRIX(NROWS + 1, nn) = 0
+
+'--------------------------------------------------------------------------------------------------------------------
+For i = 1 To NROWS
+    VALOR_VECTOR(i, 1) = Trim(VALOR_VECTOR(i, 1))
+    CURRENT_PRICE_VECTOR(i, 1) = Trim(CURRENT_PRICE_VECTOR(i, 1))
+    MATURITY_VECTOR(i, 1) = Trim(MATURITY_VECTOR(i, 1))
+    PURCHASE_DATE_VECTOR(i, 1) = Trim(PURCHASE_DATE_VECTOR(i, 1))
+    PURCHASE_PRICE_VECTOR(i, 1) = Trim(PURCHASE_PRICE_VECTOR(i, 1))
+    PURCHASE_QUANTITY_VECTOR(i, 1) = Trim(PURCHASE_QUANTITY_VECTOR(i, 1))
+    PURCHASE_FEES_VECTOR(i, 1) = Trim(PURCHASE_FEES_VECTOR(i, 1))
+    COUPON_VECTOR(i, 1) = Trim(COUPON_VECTOR(i, 1))
+    FREQUENCY_VECTOR(i, 1) = Trim(FREQUENCY_VECTOR(i, 1))
+    CALL_PRICE_VECTOR(i, 1) = Trim(CALL_PRICE_VECTOR(i, 1))
+    CALL_DATE_VECTOR(i, 1) = Trim(CALL_DATE_VECTOR(i, 1))
+    
+    MOODY_RATING_VECTOR(i, 1) = Trim(MOODY_RATING_VECTOR(i, 1))
+    SP_RATING_VECTOR(i, 1) = Trim(SP_RATING_VECTOR(i, 1))
+    
+    INSURANCE_NAME_VECTOR(i, 1) = Trim(INSURANCE_NAME_VECTOR(i, 1))
+    CUSIP_VECTOR(i, 1) = Trim(CUSIP_VECTOR(i, 1))
+    ISSUE_NAME_VECTOR(i, 1) = Trim(ISSUE_NAME_VECTOR(i, 1))
+    BOND_TYPE_VECTOR(i, 1) = Trim(BOND_TYPE_VECTOR(i, 1))
+'--------------------------------------------------------------------------------------------------------------------
+'General Bond Information
+'--------------------------------------------------------------------------------------------------------------------
+'In order to experiment with what-if scenarios, you can exclude a bond from
+'ALL portfolio calculations by changing the # for that bond's row to a blank
+'(clear contents). To restore calculations for that row simply restore the
+'number for that row.
+    If VALOR_VECTOR(i, 1) = "" Then: GoTo 1983
+'--------------------------------------------------------------------------------------------------------------------
+    If MATURITY_VECTOR(i, 1) = "" Or Val(MATURITY_VECTOR(i, 1)) = 0 Then: GoTo 1983
+    If CURRENT_PRICE_VECTOR(i, 1) = "" Then: GoTo 1983
+    If PURCHASE_DATE_VECTOR(i, 1) = "" Or Val(PURCHASE_DATE_VECTOR(i, 1)) = 0 Then: GoTo 1983
+    If PURCHASE_PRICE_VECTOR(i, 1) = "" Then: GoTo 1983
+    If PURCHASE_QUANTITY_VECTOR(i, 1) = "" Or Val(PURCHASE_QUANTITY_VECTOR(i, 1)) = 0 Then: GoTo 1983
+    'If PURCHASE_FEES_VECTOR(i, 1) = "" Or IsNumeric(PURCHASE_FEES_VECTOR(i, 1)) = False Then: GoTo 1983
+'--------------------------------------------------------------------------------------------------------------------
+    
+    TEMP0_MATRIX(i, 1) = VALOR_VECTOR(i, 1)
+    TEMP0_MATRIX(i, 2) = MOODY_RATING_VECTOR(i, 1)
+    TEMP0_MATRIX(i, 3) = SP_RATING_VECTOR(i, 1)
+    
+    TEMP0_MATRIX(i, 19) = CDate(MATURITY_VECTOR(i, 1))
+    If InStr(1, CURRENT_PRICE_VECTOR(i, 1), "-") = 0 Then
+        TEMP0_MATRIX(i, 61) = CURRENT_PRICE_VECTOR(i, 1)
+        If Val(TEMP0_MATRIX(i, 61)) > 0 Then: TEMP0_MATRIX(i, 61) = CDbl(TEMP0_MATRIX(i, 61))
+    Else
+        TEMP0_MATRIX(i, 61) = CURRENT_PRICE_VECTOR(i, 1)
+    End If
+'----------------------------------------------------------------------------
+'Purchase Information
+'This section allows you to put in purchase information for the issue.
+'The YTM column is calculated automatically and makes use of the built-in YTM()
+'function. The easiest way to understand what's going on is to select one of
+'the cells in the YTM column.
+
+'If you click on the text of this formula on the formula bar, you should get
+'a visual display of which cells are referenced by the various cell labels in
+'the formula.  Most of the columns are referenced by name in the complicated
+'formulas.  You can see the mapping of Names to cells by selecting
+'Insert->Name->Define on the menu bar.
+'----------------------------------------------------------------------------
+    TEMP0_MATRIX(i, 25) = CDate(PURCHASE_DATE_VECTOR(i, 1))
+'Enter price as a percent of par.
+'For example, if a $1000 dollar par bond is selling at a discount for $975,
+'enter price as $97.50. For Treasuries, you can enter prices as a dollar
+'figure and number of 32nds by using a "-" instead of a "."  For example, a
+'price of 101-08 is interpreted as 101 and 8/32 or 101.25.  This conversion
+'also supports formats such as 99-10+ (with + meaning add 1/16) and 99-102
+'(with the 2 at the end indicating additional 2/256).
+
+'Also, price should be a "clean" price rather than a dirty price and should
+'not include any markup for accrued interest. It's ok if price includes a
+'dealer markup. Alternately, you could subtract out the markup from the price
+'and enter it explicitly as a fee.
+
+    If InStr(1, PURCHASE_PRICE_VECTOR(i, 1), "-") = 0 Then
+        TEMP0_MATRIX(i, 26) = PURCHASE_PRICE_VECTOR(i, 1)
+        If Val(TEMP0_MATRIX(i, 26)) > 0 Then: TEMP0_MATRIX(i, 26) = CDbl(TEMP0_MATRIX(i, 26))
+    Else
+        TEMP0_MATRIX(i, 26) = PURCHASE_PRICE_VECTOR(i, 1)
+    End If
+    
+    TEMP0_MATRIX(i, 27) = CDbl(PURCHASE_QUANTITY_VECTOR(i, 1)) 'Number of bonds purchased (assuming $1000 par value per bond).
+    If Val(PURCHASE_FEES_VECTOR(i, 1)) > 0 Then
+        TEMP0_MATRIX(i, 28) = CDbl(PURCHASE_FEES_VECTOR(i, 1)) 'Enter any transaction fee on this purchase.
+'If the price already includes the markup, don't reenter the fee separately (unless you decrease the price appropriately first).
+'Finally , don't include incrued interest in the fees.
+    Else
+        TEMP0_MATRIX(i, 28) = 0
+    End If
+'--------------------------------------------------------------------------------------------------------------------
+    
+    If Val(COUPON_VECTOR(i, 1)) > 0 Then
+        TEMP0_MATRIX(i, 16) = CDbl(COUPON_VECTOR(i, 1))
+    Else
+        TEMP0_MATRIX(i, 16) = 0
+    End If
+        
+    If Val(FREQUENCY_VECTOR(i, 1)) > 0 Then
+        TEMP0_MATRIX(i, 17) = CInt(FREQUENCY_VECTOR(i, 1))
+        'Coupons Per Year
+    Else
+        TEMP0_MATRIX(i, 17) = 0
+    End If
+    
+    If Val(CALL_PRICE_VECTOR(i, 1)) = 0 Then
+        TEMP0_MATRIX(i, 23) = ""
+    Else
+        TEMP0_MATRIX(i, 23) = CDbl(CALL_PRICE_VECTOR(i, 1))
+    End If
+        
+    If CALL_DATE_VECTOR(i, 1) = "" Or Val(CALL_DATE_VECTOR(i, 1)) = 0 Then
+        TEMP0_MATRIX(i, 24) = "" 'Leave Call Price and Call Date blank if bond is non-callable
+    Else
+        TEMP0_MATRIX(i, 24) = CDate(CALL_DATE_VECTOR(i, 1))
+    End If
+'--------------------------------------------------------------------------------------------------------------------
+    TEMP1_VAL = TEMP0_MATRIX(i, 61): GoSub BOND_PRICE_PARSE_LINE: TEMP0_MATRIX(i, 62) = TEMP2_VAL
+    TEMP1_VAL = TEMP0_MATRIX(i, 26): GoSub BOND_PRICE_PARSE_LINE: TEMP0_MATRIX(i, 29) = TEMP2_VAL
+'--------------------------------------------------------------------------------------------------------------------
+    TEMP0_MATRIX(i, 32) = TEMP0_MATRIX(i, 27)
+    TEMP0_MATRIX(i, 33) = TEMP0_MATRIX(i, 28)
+    
+    TEMP0_MATRIX(i, 74) = (TEMP0_MATRIX(i, 62) * MULT1_VAL) * TEMP0_MATRIX(i, 32)
+    TEMP0_MATRIX(NROWS + 1, 74) = TEMP0_MATRIX(NROWS + 1, 74) + TEMP0_MATRIX(i, 74)
+    
+    FIND_STR = "": TEMP0_MATRIX(i, 10) = ""
+    If TEMP0_MATRIX(i, 2) <> NR_STR Then
+        If CREDIT_AGENCIES_FLAG = True Then
+            LOOK_STR = TEMP0_MATRIX(i, 2)
+            GoSub CREDIT_RATINGS_MOODY_LINE
+        End If
+        If n > 0 Then
+            j = n
+            TEMP0_MATRIX(i, 6) = TEMP0_MATRIX(i, 74)
+            TEMP0_MATRIX(NROWS + 1, 6) = TEMP0_MATRIX(NROWS + 1, 6) + TEMP0_MATRIX(i, 6)
+            TEMP0_MATRIX(i, 8) = j
+            TEMP0_MATRIX(i, 10) = j
+        End If
+    End If
+        
+    FIND_STR = ""
+    If TEMP0_MATRIX(i, 3) <> NR_STR Then
+        If CREDIT_AGENCIES_FLAG = True Then
+            LOOK_STR = TEMP0_MATRIX(i, 3)
+            GoSub CREDIT_RATINGS_SP_LINE
+        End If
+        If n > 0 Then
+            j = n
+            TEMP0_MATRIX(i, 7) = TEMP0_MATRIX(i, 74)
+            If TEMP0_MATRIX(i, 6) <> "" Then
+                TEMP0_MATRIX(NROWS + 1, 7) = TEMP0_MATRIX(NROWS + 1, 7) + TEMP0_MATRIX(i, 6)
+            End If
+            TEMP0_MATRIX(i, 9) = j
+            TEMP0_MATRIX(i, 10) = Round((TEMP0_MATRIX(i, 10) + j + (tolerance)) / 2, 0)
+        End If
+    End If
+    
+    FIND_STR = ""
+    If TEMP0_MATRIX(i, 10) <> "" Then
+        If CREDIT_AGENCIES_FLAG = True Then
+            LOOK_STR = CStr(TEMP0_MATRIX(i, 10))
+            GoSub CREDIT_RATINGS_TIER_LINE
+        End If
+        If n > 0 Then
+            j = n
+            TEMP0_MATRIX(i, 11) = j
+        Else
+            TEMP0_MATRIX(i, 11) = NR_INT '-> Tier
+        End If
+    Else
+        If CREDIT_AGENCIES_FLAG = True Then
+            LOOK_STR = NR_STR
+            GoSub CREDIT_RATINGS_SP_LINE
+        End If
+        If n > 0 Then
+            j = n
+            TEMP0_MATRIX(i, 10) = j
+        Else
+            TEMP0_MATRIX(i, 10) = ""
+        End If
+        TEMP0_MATRIX(i, 11) = NR_INT
+    End If
+    
+    TEMP0_MATRIX(i, 12) = INSURANCE_NAME_VECTOR(i, 1)
+    TEMP0_MATRIX(i, 13) = CUSIP_VECTOR(i, 1)
+    TEMP0_MATRIX(i, 14) = ISSUE_NAME_VECTOR(i, 1)
+    TEMP0_MATRIX(i, 15) = BOND_TYPE_VECTOR(i, 1)
+
+    If TEMP0_MATRIX(i, 17) = 0 Then
+        TEMP0_MATRIX(i, 18) = 1
+    Else
+        If TEMP0_MATRIX(i, 17) = 12 Then
+            TEMP0_MATRIX(i, 18) = 4
+        Else
+            TEMP0_MATRIX(i, 18) = TEMP0_MATRIX(i, 17)
+        End If
+    End If
+    B_VAL = CInt(COUNT_BASIS_VECTOR(i, 1))
+    TEMP0_MATRIX(i, 20) = Month(TEMP0_MATRIX(i, 19))
+    'TEMP0_MATRIX(i, 21) = YEARFRAC_FUNC(SETTLEMENT, TEMP0_MATRIX(i, 19), B_VAL)
+    TEMP0_MATRIX(i, 21) = COUNT_DAYS_FUNC(SETTLEMENT, TEMP0_MATRIX(i, 19), B_VAL) / 365
+    TEMP0_MATRIX(NROWS + 1, 21) = MAXIMUM_FUNC(TEMP0_MATRIX(NROWS + 1, 21), TEMP0_MATRIX(i, 21))
+        
+    TEMP0_MATRIX(i, 30) = TEMP0_MATRIX(i, 32) * (MULT1_VAL * TEMP0_MATRIX(i, 29)) + TEMP0_MATRIX(i, 33)
+    TEMP0_MATRIX(NROWS + 1, 30) = TEMP0_MATRIX(NROWS + 1, 30) + TEMP0_MATRIX(i, 30)
+            
+    TEMP0_MATRIX(i, 31) = (TEMP0_MATRIX(i, 32) * MULT3_VAL) * (TEMP0_MATRIX(i, 16) / MULT2_VAL)
+    TEMP0_MATRIX(NROWS + 1, 31) = TEMP0_MATRIX(NROWS + 1, 31) + TEMP0_MATRIX(i, 31)
+    
+    If TEMP0_MATRIX(i, 17) = 0 Then
+        TEMP0_MATRIX(i, 35) = 0
+    Else
+        TEMP0_MATRIX(i, 35) = TEMP0_MATRIX(i, 31) / TEMP0_MATRIX(i, 17)
+    End If
+    
+    If PORT_BOND_TYPES_FLAG = True Then LOOK_STR = TEMP0_MATRIX(i, 15): GoSub PORT_TAXES_LINE Else FIND_STR = "" 'Look for taxes
+    If FIND_STR <> "" Then TEMP0_MATRIX(i, 69) = n Else TEMP0_MATRIX(i, 69) = ""
+    
+    k = 12
+    For j = 1 To k 'Monthly
+        l = TEMP0_MATRIX(i, 17)
+        m = TEMP0_MATRIX(i, 20)
+        If l = 0 Then
+            TEMP0_MATRIX(i, 36 + j - 1) = 0
+            TEMP0_MATRIX(i, 48 + j - 1) = 0
+        Else
+        'These Cells labelled 1-12 are used to compute coupon payments that occur in each month, and thus the portfolio's cash flows.
+            TEMP1_VAL = (m - j) / (12 / l)
+            If TEMP1_VAL - 1 * Int(TEMP1_VAL / 1) Then
+            'Returns the remainder after number is divided by divisor.
+            'The result has the same sign as divisor.
+                TEMP0_MATRIX(i, 36 + j - 1) = 0
+                TEMP0_MATRIX(i, 48 + j - 1) = 0
+            Else
+                TEMP0_MATRIX(i, 36 + j - 1) = TEMP0_MATRIX(i, 35)
+                TEMP0_MATRIX(NROWS + 1, 36 + j - 1) = TEMP0_MATRIX(NROWS + 1, 36 + j - 1) + TEMP0_MATRIX(i, 36 + j - 1)
+'------------> Values about (1-12) are for after tax cash flows for each month
+'These Cells labelled 1-12 are used to compute coupon payments that occur in each month, and thus the portfolio's cash flows.
+                If FIND_STR <> "" Then
+                    TEMP0_MATRIX(i, 48 + j - 1) = TEMP0_MATRIX(i, 35) * (1 - CDbl(FIND_STR))
+                    TEMP0_MATRIX(NROWS + 1, 48 + j - 1) = TEMP0_MATRIX(NROWS + 1, 48 + j - 1) + TEMP0_MATRIX(i, 48 + j - 1)
+                Else
+                    TEMP0_MATRIX(i, 48 + j - 1) = 0
+                End If
+            End If
+        End If
+    Next j
+  
+    P_VAL = TEMP0_MATRIX(i, 29) + (TEMP0_MATRIX(i, 33) / MULT1_VAL) / TEMP0_MATRIX(i, 32)
+    S_VAL = TEMP0_MATRIX(i, 25)
+    M_VAL = TEMP0_MATRIX(i, 19)
+    C_VAL = TEMP0_MATRIX(i, 16) / MULT2_VAL
+    F_VAL = TEMP0_MATRIX(i, 18)
+    R_VAL = 100
+    G_VAL = CDbl(GUESS_YIELD_VECTOR(i, 1))
+    GoSub PORT_BOND_YIELD_LINE
+    TEMP0_MATRIX(i, 60) = Y_VAL 'Yield to maturity based on Purchase Price
+
+'This section contains a column where you can update the price of the bond
+'several computed columns that contain information about the various financial
+'properties of the bond and the portfolio.
+
+'Most of the columns in this section have comments (indicated by red marks on
+'the top right of the column name) that activate when you hold the mouse over
+'the column header for a couple of seconds.  These should explain what's being
+'done here.
+
+'There is some magic in the computation of the "Fair YTM".  This column attempts
+'to indicate how the bond is priced compared to the current market yield curve by
+'extrapolation.  You need to enter the current market yield curve data on the
+'yield curve matrix for this column to be meaningful.
+'----------------------------------------------------------------------------
+    P_VAL = TEMP0_MATRIX(i, 62)
+    S_VAL = SETTLEMENT
+    GoSub PORT_BOND_YIELD_LINE
+    TEMP0_MATRIX(i, 63) = Y_VAL 'Yield to Maturity based on current price
+    If (TEMP0_MATRIX(i, 24) <> "" And TEMP0_MATRIX(i, 23) <> "" And _
+        TEMP0_MATRIX(i, 24) > SETTLEMENT) Then 'Version 3.03
+'        TEMP0_MATRIX(i, 19) > SETTLEMENT) Then
+                
+        P_VAL = TEMP0_MATRIX(i, 62)
+        S_VAL = SETTLEMENT 'TEMP0_MATRIX(i, 25)
+        M_VAL = TEMP0_MATRIX(i, 24)
+        R_VAL = TEMP0_MATRIX(i, 23) 'Redemption -> Call Price
+        GoSub PORT_BOND_YIELD_LINE
+        TEMP0_MATRIX(i, 64) = Y_VAL
+        
+        If TEMP0_MATRIX(i, 63) < TEMP0_MATRIX(i, 64) Then 'IF(YTM<YTC,YTM,YTC)
+            TEMP0_MATRIX(i, 65) = TEMP0_MATRIX(i, 63) 'The lowest yield taking into
+            'account current price and any calls on the bond
+            TEMP0_MATRIX(i, 68) = TEMP0_MATRIX(i, 19)
+        Else
+            TEMP0_MATRIX(i, 65) = TEMP0_MATRIX(i, 64)
+            TEMP0_MATRIX(i, 68) = TEMP0_MATRIX(i, 24)
+        End If
+    Else
+        TEMP0_MATRIX(i, 64) = ""
+        TEMP0_MATRIX(i, 65) = TEMP0_MATRIX(i, 63)
+        TEMP0_MATRIX(i, 68) = TEMP0_MATRIX(i, 19)
+    End If
+    
+    TEMP0_MATRIX(i, 76) = TEMP0_MATRIX(i, 65)
+    TEMP0_VAL = TEMP0_MATRIX(i, 21)
+    If TEMP0_VAL > 0 Then
+        If TEMP0_VAL > 29 Then 'Maturity over 29 years....
+            TEMP0_MATRIX(i, 70) = TEMP0_MATRIX(i, 65)
+        Else
+            If MARKET_YIELDS_FLAG = True And PORT_BOND_TYPES_FLAG = True And TEMP0_MATRIX(i, 69) <> "" Then
+                j = CInt(TEMP0_MATRIX(i, 69))
+'                If j = 0 Then: GoTo 1982
+                LOOK_STR = CStr(PORT_BOND_TYPES_MATRIX(j, 1))
+                GoSub MARKET_YIELDS1_LINE
+                If n > 0 Then
+                    GoSub MARKET_YIELDS2_LINE
+                    If TEMP1_VAL <> "" And TEMP2_VAL <> "" Then 'Based on the current Market yield data,
+                    'this is the YTM that would be paid on an AAA bond with the same maturity as this bond
+                        TEMP0_MATRIX(i, 70) = TEMP1_VAL + (TEMP2_VAL - TEMP1_VAL) * (TEMP0_VAL - ASYM_DOWN_FUNC(TEMP0_VAL, 1))
+                    Else
+                        TEMP0_MATRIX(i, 70) = TEMP0_MATRIX(i, 65)
+                    End If
+                Else
+                    TEMP0_MATRIX(i, 70) = TEMP0_MATRIX(i, 65)
+                End If
+            Else
+'1982:
+                TEMP0_MATRIX(i, 70) = TEMP0_MATRIX(i, 65)
+            End If
+        End If
+        
+        S_VAL = SETTLEMENT
+        M_VAL = TEMP0_MATRIX(i, 19)
+        C_VAL = TEMP0_MATRIX(i, 16) / MULT2_VAL
+        Y_VAL = TEMP0_MATRIX(i, 70)
+        F_VAL = TEMP0_MATRIX(i, 18)
+        R_VAL = 100
+        GoSub PORT_BOND_PRICE_LINE
+        TEMP0_MATRIX(i, 71) = P_VAL 'Based on the current Market yield data,
+'this is the YTM that would be paid on an AAA bond with the same maturity
+'and coupon as this bond
+        TEMP0_MATRIX(i, 72) = TEMP0_MATRIX(i, 76) - TEMP0_MATRIX(i, 70) 'Yield premium that this bond offers compared
+'to similar maturity bond based on mkt yield curve
+
+    End If
+    
+'----------------------------------------------------------------------------------
+'----------------------------------------------------------------------------------
+'You can change the bond maturity time brackets.
+'The first entry is entered in months and the rest are entered in years.
+'You must enter values in ascending order with no overlap.
+'For each entry, all bonds maturing between the time entered in the previous
+'entry (or today for the first entry) and the current entry are included in
+'calculations for that entry.
+'----------------------------------------------------------------------------------
+    k = h(1)
+    For j = 1 To k
+        DATE1_VAL = PORT_BOND_MATURITIES_MATRIX(j, 1)
+        If j = 1 Then
+            If TEMP0_MATRIX(i, 19) <= DATE1_VAL Then
+                TEMP0_MATRIX(i, 76 + j) = TEMP0_MATRIX(i, 74)
+                TEMP0_MATRIX(NROWS + 1, 76 + j) = TEMP0_MATRIX(NROWS + 1, 76 + j) + TEMP0_MATRIX(i, 76 + j)
+            End If
+        Else
+            If (TEMP0_MATRIX(i, 19) <= DATE1_VAL And TEMP0_MATRIX(i, 19) > DATE2_VAL) Then
+                TEMP0_MATRIX(i, 76 + j) = TEMP0_MATRIX(i, 74)
+                TEMP0_MATRIX(NROWS + 1, 76 + j) = TEMP0_MATRIX(NROWS + 1, 76 + j) + TEMP0_MATRIX(i, 76 + j)
+            End If
+        End If
+        DATE2_VAL = DATE1_VAL
+    Next j
+    jj = hh + h(1)
+    k = h(2)
+    For j = 1 To k
+        If TEMP0_MATRIX(i, 15) = PORT_BOND_TYPES_MATRIX(j, 1) Then
+            TEMP0_MATRIX(i, jj + j) = TEMP0_MATRIX(i, 74)
+            TEMP0_MATRIX(NROWS + 1, jj + j) = TEMP0_MATRIX(NROWS + 1, jj + j) + TEMP0_MATRIX(i, jj + j)
+        End If
+    Next j
+
+    jj = jj + h(2)
+    k = h(3)
+    For j = 1 To k
+        If TEMP0_MATRIX(i, 11) = j Then
+            TEMP0_MATRIX(i, jj + j) = TEMP0_MATRIX(i, 74)
+            TEMP0_MATRIX(NROWS + 1, jj + j) = TEMP0_MATRIX(NROWS + 1, jj + j) + TEMP0_MATRIX(i, jj + j)
+        End If
+    Next j
+
+    TEMP0_MATRIX(i, nn) = (YEARFRAC_FUNC(TEMP0_MATRIX(i, 25), SETTLEMENT, 0) * (TEMP0_MATRIX(i, 32) * MULT3_VAL) * (TEMP0_MATRIX(i, 16) / MULT2_VAL))
+    TEMP0_MATRIX(NROWS + 1, nn) = TEMP0_MATRIX(NROWS + 1, nn) + TEMP0_MATRIX(i, nn)
+    TEMP0_MATRIX(i, nn + 1) = (TEMP0_MATRIX(i, 74) + TEMP0_MATRIX(i, nn) - TEMP0_MATRIX(i, 30)) / TEMP0_MATRIX(i, 30)
+'-------------------------------------------------------------------------------
+    If TEMP0_MATRIX(i, 63) <> 0 Then 'Fix this if Statement - 63: YTM
+'-------------------------------------------------------------------------------
+'Bond Analysis
+'This section contains a few analytics columns that show modified duration,
+'bond risk, and bond sensitivity. Together, these metrics can be used to gauge
+'the portfolio's sensitivity to changes in interest rates. In particular,
+'the bond risk column attempts to estimate the change in market value in each
+'bond and the portfolio overall that would likely result from a X basis
+'point (Y%) change in interest rates.
+
+
+'The Modified Duration and Bond Sensitivity columns are used to give an indication
+'of what might happen to the value of each holding and the portfolio overall as
+'interest rates change.
+
+'Interest Rate Sensitivity (BondRisk) is determined by %dP =
+'(Modified Duration)*(dy) -  .5*convexity*(dy)^2
+'This takes into account the overstatement of sensitivity in Modified Duration
+'(straight line estimate of relationship)
+'by removing the excess in Duration that is caused by the convexity of a best
+'fit parabola fitted to the bond's yield curve.  In english, this shows the
+'estimated change in value from 100 bp (1%) change in interest rates
+'LY Premium is calculated by comparing the yield on the bond with the yield
+'returned by plugging the Bond 's maturity into the muni market yield curve
+'entered in the yield curve matrix
+'----------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, 63) > 0 Then
+            S_VAL = SETTLEMENT
+            M_VAL = TEMP0_MATRIX(i, 19)
+            C_VAL = TEMP0_MATRIX(i, 16) / MULT2_VAL
+            Y_VAL = TEMP0_MATRIX(i, 63)
+            F_VAL = TEMP0_MATRIX(i, 18)
+            R_VAL = 100
+            TEMP0_MATRIX(i, nn + 2) = BOND_CONVEXITY_DURATION_FUNC(S_VAL, M_VAL, C_VAL, Y_VAL, F_VAL, R_VAL, B_VAL, 0)(2) 'Modified Duration:
+            'This measure gives an indication of the timing of the bonds cash flows. Duration is represented in years.
+            If TEMP0_MATRIX(i, 63) > DELTA_VAL Then Y_VAL = TEMP0_MATRIX(i, 63) - DELTA_VAL Else Y_VAL = epsilon
+            GoSub PORT_BOND_PRICE_LINE
+            TEMP0_MATRIX(i, nn + 3) = P_VAL 'This column computes the Price that would result from a 100 bp (1%) decrease
+            'in bond yield (interest rates)
+            Y_VAL = TEMP0_MATRIX(i, 63) + DELTA_VAL
+            GoSub PORT_BOND_PRICE_LINE
+            TEMP0_MATRIX(i, nn + 4) = P_VAL 'This column computes the Price that would result from a 100 bp (1%) decrease
+            'in bond yield (interest rates)
+        Else
+            TEMP0_MATRIX(i, nn + 2) = 0
+            TEMP0_MATRIX(i, nn + 3) = TEMP0_MATRIX(i, 61)
+            TEMP0_MATRIX(i, nn + 4) = TEMP0_MATRIX(i, 61)
+        End If
+        TEMP0_MATRIX(i, nn + 5) = (TEMP0_MATRIX(i, nn + 3) - TEMP0_MATRIX(i, nn + 4)) / (2 * TEMP0_MATRIX(i, 62) * DELTA_VAL) * (1 + TEMP0_MATRIX(i, 63))
+        
+        If TEMP0_MATRIX(i, nn + 2) = 0 Then TEMP0_MATRIX(i, nn + 7) = 0 Else TEMP0_MATRIX(i, nn + 7) = (TEMP0_MATRIX(i, nn + 4) + TEMP0_MATRIX(i, nn + 3) - (2 * TEMP0_MATRIX(i, 62))) / ((TEMP0_MATRIX(i, 62) * (DELTA_VAL * DELTA_VAL)))
+        TEMP0_MATRIX(i, nn + 9) = TEMP0_MATRIX(i, nn + 2) * DELTA_VAL - ((0.5) * TEMP0_MATRIX(i, nn + 7) * DELTA_VAL * DELTA_VAL) 'This is a more
+        'accurate indicator of interest rate sensitivity that takes into account the effects of curvature in the relationship between price
+        'and yield for this bond
+        TEMP0_MATRIX(i, nn + 11) = TEMP0_MATRIX(i, 74) * TEMP0_MATRIX(i, nn + 9) 'Change in value of holding that will
+        'result from a 100 basis point (1%) change in bond yield
+'-------------------------------------------------------------------------------
+    End If
+'-------------------------------------------------------------------------------
+
+'-------------------------------------------------------------------------------
+1983:
+Next i
+'-------------------------------------------------------------------------------
+mm = jj
+'-------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 21) = REMOVE_DECIMALS_NUMBER_FUNC(TEMP0_MATRIX(NROWS + 1, 21)) + 1
+TEMP0_MATRIX(NROWS + 1, nn + 1) = (TEMP0_MATRIX(NROWS + 1, 74) + TEMP0_MATRIX(NROWS + 1, nn) - TEMP0_MATRIX(NROWS + 1, 30)) / TEMP0_MATRIX(NROWS + 1, 30)
+'-------------------------------------------------------------------------------
+For j = 4 To 5: TEMP0_MATRIX(NROWS + 1, j) = 0: Next j
+'-------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 22) = 0: TEMP0_MATRIX(NROWS + 1, 34) = 0
+TEMP0_MATRIX(NROWS + 1, 66) = 0: TEMP0_MATRIX(NROWS + 1, 67) = 0
+TEMP0_MATRIX(NROWS + 1, 73) = 0: TEMP0_MATRIX(NROWS + 1, 75) = 0
+TEMP0_MATRIX(NROWS + 1, nn + 6) = 0: TEMP0_MATRIX(NROWS + 1, nn + 8) = 0
+TEMP0_MATRIX(NROWS + 1, nn + 10) = 0
+'-------------------------------------------------------------------------------
+ii = h(0) + h(1) + h(2) + h(3) '95
+jj = ii + h(2) + h(1) '106
+kk = jj + h(2) + h(3) '119
+ll = kk + h(2) '124
+k = h(2) '5
+For j = 1 To k
+    TEMP0_MATRIX(NROWS + 1, ii + j) = 0
+    TEMP0_MATRIX(NROWS + 1, jj + j) = 0
+    TEMP0_MATRIX(NROWS + 1, kk + j) = 0
+    TEMP0_MATRIX(NROWS + 1, ll + j) = 0
+Next j
+
+ii = ii + h(2) '100
+jj = ll + h(2) '129
+kk = jj + h(1) '135
+k = h(1) '6
+For j = 1 To k
+    TEMP0_MATRIX(NROWS + 1, ii + j) = 0
+    TEMP0_MATRIX(NROWS + 1, jj + j) = 0
+    TEMP0_MATRIX(NROWS + 1, kk + j) = 0
+Next j
+
+ii = ii + h(1) + h(2) '111
+jj = kk + h(1) '141
+kk = jj + h(3) '149
+k = h(3) '8
+For j = 1 To k
+    TEMP0_MATRIX(NROWS + 1, ii + j) = 0
+    TEMP0_MATRIX(NROWS + 1, jj + j) = 0
+    TEMP0_MATRIX(NROWS + 1, kk + j) = 0
+Next j
+jj = mm + h(3)
+'-------------------------------------------------------------------------------
+For i = 1 To NROWS
+'-------------------------------------------------------------------------------
+    If TEMP0_MATRIX(i, 6) <> "" And TEMP0_MATRIX(i, 8) <> "" Then
+        If TEMP0_MATRIX(NROWS + 1, 6) <> 0 Then
+            TEMP0_MATRIX(i, 4) = TEMP0_MATRIX(i, 6) / TEMP0_MATRIX(NROWS + 1, 6) * TEMP0_MATRIX(i, 8)
+            TEMP0_MATRIX(NROWS + 1, 4) = TEMP0_MATRIX(NROWS + 1, 4) + TEMP0_MATRIX(i, 4)
+        End If
+    End If
+    If TEMP0_MATRIX(i, 7) <> "" And TEMP0_MATRIX(i, 9) <> "" Then
+        If TEMP0_MATRIX(NROWS + 1, 7) <> 0 Then
+            TEMP0_MATRIX(i, 5) = TEMP0_MATRIX(i, 7) / TEMP0_MATRIX(NROWS + 1, 7) * TEMP0_MATRIX(i, 9)
+            TEMP0_MATRIX(NROWS + 1, 5) = TEMP0_MATRIX(NROWS + 1, 5) + TEMP0_MATRIX(i, 5)
+        End If
+    End If
+    
+    If TEMP0_MATRIX(i, 74) <> "" Then
+        If TEMP0_MATRIX(NROWS + 1, 74) <> 0 Then
+            TEMP0_MATRIX(i, 75) = TEMP0_MATRIX(i, 74) / TEMP0_MATRIX(NROWS + 1, 74)
+            TEMP0_MATRIX(NROWS + 1, 75) = TEMP0_MATRIX(NROWS + 1, 75) + TEMP0_MATRIX(i, 75)
+        End If
+    End If
+    If TEMP0_MATRIX(i, 21) <> "" And TEMP0_MATRIX(i, 75) <> "" Then
+        TEMP0_MATRIX(i, 22) = TEMP0_MATRIX(i, 21) * TEMP0_MATRIX(i, 75)
+        TEMP0_MATRIX(NROWS + 1, 22) = TEMP0_MATRIX(NROWS + 1, 22) + TEMP0_MATRIX(i, 22)
+    End If
+    If TEMP0_MATRIX(i, 30) <> "" And TEMP0_MATRIX(i, 60) <> "" And TEMP0_MATRIX(NROWS + 1, 30) <> 0 Then
+        TEMP0_MATRIX(i, 34) = TEMP0_MATRIX(i, 60) * (TEMP0_MATRIX(i, 30) / TEMP0_MATRIX(NROWS + 1, 30))
+        TEMP0_MATRIX(NROWS + 1, 34) = TEMP0_MATRIX(NROWS + 1, 34) + TEMP0_MATRIX(i, 34)
+    End If
+    If TEMP0_MATRIX(i, 75) <> "" And TEMP0_MATRIX(i, 72) <> "" Then
+        TEMP0_MATRIX(i, 73) = TEMP0_MATRIX(i, 75) * TEMP0_MATRIX(i, 72)
+        TEMP0_MATRIX(NROWS + 1, 73) = TEMP0_MATRIX(NROWS + 1, 73) + TEMP0_MATRIX(i, 73)
+    End If
+    
+    If PORT_BOND_TYPES_FLAG = True Then LOOK_STR = TEMP0_MATRIX(i, 15): GoSub PORT_TAXES_LINE Else FIND_STR = "" 'Look for taxes
+    If TEMP0_MATRIX(i, 75) <> "" And TEMP0_MATRIX(i, 76) <> "" Then
+        TEMP0_MATRIX(i, 66) = TEMP0_MATRIX(i, 76) * TEMP0_MATRIX(i, 75)
+        TEMP0_MATRIX(NROWS + 1, 66) = TEMP0_MATRIX(NROWS + 1, 66) + TEMP0_MATRIX(i, 66)
+        If FIND_STR <> "" Then
+            TEMP0_MATRIX(i, 67) = TEMP0_MATRIX(i, 66) * (1 - CDbl(FIND_STR))
+            TEMP0_MATRIX(NROWS + 1, 67) = TEMP0_MATRIX(NROWS + 1, 67) + TEMP0_MATRIX(i, 67)
+        End If
+    End If
+
+    If TEMP0_MATRIX(i, 75) <> "" And TEMP0_MATRIX(i, nn + 2) <> "" Then
+        TEMP0_MATRIX(i, nn + 6) = TEMP0_MATRIX(i, 75) * TEMP0_MATRIX(i, nn + 2)
+        TEMP0_MATRIX(NROWS + 1, nn + 6) = TEMP0_MATRIX(NROWS + 1, nn + 6) + TEMP0_MATRIX(i, nn + 6)
+    End If
+
+    If TEMP0_MATRIX(i, 74) <> "" And TEMP0_MATRIX(i, nn + 7) <> "" Then
+        If TEMP0_MATRIX(NROWS + 1, 74) <> 0 Then
+            TEMP0_MATRIX(i, nn + 8) = (TEMP0_MATRIX(i, 74) / TEMP0_MATRIX(NROWS + 1, 74)) * TEMP0_MATRIX(i, nn + 7)
+            TEMP0_MATRIX(NROWS + 1, nn + 8) = TEMP0_MATRIX(NROWS + 1, nn + 8) + TEMP0_MATRIX(i, nn + 8)
+        End If
+    End If
+    
+    If TEMP0_MATRIX(i, 75) <> "" And TEMP0_MATRIX(i, nn + 9) <> "" Then
+        TEMP0_MATRIX(i, nn + 10) = TEMP0_MATRIX(i, 75) * TEMP0_MATRIX(i, nn + 9)
+        TEMP0_MATRIX(NROWS + 1, nn + 10) = TEMP0_MATRIX(NROWS + 1, nn + 10) + TEMP0_MATRIX(i, nn + 10)
+    End If
+    
+'--------------------------------------------------------------------------------------------
+    ii = jj - h(2) - h(3)
+    kk = jj + h(1) + h(2)
+    ll = kk + h(2) + h(3)
+    mm = ll + h(2)
+    k = h(2)
+    For j = 1 To k
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, 10) <> "" And TEMP0_MATRIX(i, ii + j) <> "" Then
+            If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+                TEMP0_MATRIX(i, jj + j) = TEMP0_MATRIX(i, 10) * (TEMP0_MATRIX(i, ii + j) / TEMP0_MATRIX(NROWS + 1, ii + j))
+                TEMP0_MATRIX(NROWS + 1, jj + j) = TEMP0_MATRIX(NROWS + 1, jj + j) + TEMP0_MATRIX(i, jj + j)
+            End If
+        End If
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, nn + 2) <> "" And TEMP0_MATRIX(i, ii + j) <> "" Then
+            If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+                TEMP0_MATRIX(i, kk + j) = TEMP0_MATRIX(i, nn + 2) * (TEMP0_MATRIX(i, ii + j) / TEMP0_MATRIX(NROWS + 1, ii + j))
+                TEMP0_MATRIX(NROWS + 1, kk + j) = TEMP0_MATRIX(NROWS + 1, kk + j) + TEMP0_MATRIX(i, kk + j)
+            End If
+        End If
+        
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, 76) <> "" Then
+            If TEMP0_MATRIX(i, ii + j) <> "" Then
+                If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+                    TEMP0_MATRIX(i, ll + j) = TEMP0_MATRIX(i, 76) * (TEMP0_MATRIX(i, ii + j) / TEMP0_MATRIX(NROWS + 1, ii + j))
+                    TEMP0_MATRIX(NROWS + 1, ll + j) = TEMP0_MATRIX(NROWS + 1, ll + j) + TEMP0_MATRIX(i, ll + j)
+                    If FIND_STR <> "" Then
+                        TEMP0_MATRIX(i, mm + j) = TEMP0_MATRIX(i, ll + j) * (1 - CDbl(FIND_STR))
+                        TEMP0_MATRIX(NROWS + 1, mm + j) = TEMP0_MATRIX(NROWS + 1, mm + j) + TEMP0_MATRIX(i, mm + j)
+                    End If
+                End If
+            End If
+        End If
+'--------------------------------------------------------------------------------------------
+    Next j
+'--------------------------------------------------------------------------------------------
+
+'--------------------------------------------------------------------------------------------
+    kk = jj + h(2)
+    ll = kk + h(1) + h(2) * 3 + h(3)
+    mm = ll + h(1)
+    k = h(1)
+    For j = 1 To k
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, 10) <> "" And TEMP0_MATRIX(i, 76 + j) <> "" Then
+            If TEMP0_MATRIX(NROWS + 1, 76 + j) <> 0 Then
+                TEMP0_MATRIX(i, kk + j) = TEMP0_MATRIX(i, 10) * (TEMP0_MATRIX(i, 76 + j) / TEMP0_MATRIX(NROWS + 1, 76 + j))
+                TEMP0_MATRIX(NROWS + 1, kk + j) = TEMP0_MATRIX(NROWS + 1, kk + j) + TEMP0_MATRIX(i, kk + j)
+            End If
+        End If
+        
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, 76) <> "" Then
+            If TEMP0_MATRIX(i, 76 + j) <> "" Then
+                If TEMP0_MATRIX(NROWS + 1, 76 + j) <> 0 Then
+                    TEMP0_MATRIX(i, ll + j) = TEMP0_MATRIX(i, 76) * (TEMP0_MATRIX(i, 76 + j) / TEMP0_MATRIX(NROWS + 1, 76 + j))
+                    TEMP0_MATRIX(NROWS + 1, ll + j) = TEMP0_MATRIX(NROWS + 1, ll + j) + TEMP0_MATRIX(i, ll + j)
+                    If FIND_STR <> "" Then
+                        TEMP0_MATRIX(i, mm + j) = TEMP0_MATRIX(i, ll + j) * (1 - CDbl(FIND_STR))
+                        TEMP0_MATRIX(NROWS + 1, mm + j) = TEMP0_MATRIX(NROWS + 1, mm + j) + TEMP0_MATRIX(i, mm + j)
+                    End If
+                End If
+            End If
+        End If
+'--------------------------------------------------------------------------------------------
+    Next j
+'--------------------------------------------------------------------------------------------
+    ii = ii + h(2)
+    kk = jj + h(1) + h(2) * 2
+    ll = kk + h(1) * 2 + h(2) * 2 + h(3)
+    mm = ll + h(3)
+'--------------------------------------------------------------------------------------------
+    k = h(3)
+    For j = 1 To k
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, nn + 2) <> "" And TEMP0_MATRIX(i, ii + j) <> "" Then
+            If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+                TEMP0_MATRIX(i, kk + j) = TEMP0_MATRIX(i, nn + 2) * (TEMP0_MATRIX(i, ii + j) / TEMP0_MATRIX(NROWS + 1, ii + j))
+                TEMP0_MATRIX(NROWS + 1, kk + j) = TEMP0_MATRIX(NROWS + 1, kk + j) + TEMP0_MATRIX(i, kk + j)
+            End If
+        End If
+        
+'--------------------------------------------------------------------------------------------
+        If TEMP0_MATRIX(i, 76) <> "" Then
+            If TEMP0_MATRIX(i, ii + j) <> "" Then
+                If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+                    TEMP0_MATRIX(i, ll + j) = TEMP0_MATRIX(i, 76) * (TEMP0_MATRIX(i, ii + j) / TEMP0_MATRIX(NROWS + 1, ii + j))
+                    TEMP0_MATRIX(NROWS + 1, ll + j) = TEMP0_MATRIX(NROWS + 1, ll + j) + TEMP0_MATRIX(i, ll + j)
+                    If FIND_STR <> "" Then
+                        TEMP0_MATRIX(i, mm + j) = TEMP0_MATRIX(i, ll + j) * (1 - CDbl(FIND_STR))
+                        TEMP0_MATRIX(NROWS + 1, mm + j) = TEMP0_MATRIX(NROWS + 1, mm + j) + TEMP0_MATRIX(i, mm + j)
+                    End If
+                End If
+            End If
+        End If
+'--------------------------------------------------------------------------------------------
+    Next j
+'--------------------------------------------------------------------------------------------
+Next i
+'--------------------------------------------------------------------------------------------
+
+'--------------------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 4) = Round(TEMP0_MATRIX(NROWS + 1, 4), 2)
+TEMP0_MATRIX(NROWS + 1, 5) = Round(TEMP0_MATRIX(NROWS + 1, 5), 2)
+'-------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 13) = (TEMP0_MATRIX(NROWS + 1, 4) + TEMP0_MATRIX(NROWS + 1, 5)) / 2
+'This value is a numerical representation of the average credit rating of
+'the portfolio.
+'This "score" is created by translating the coded ratings (Aa1, etc) from
+'S&P/Fitch and Moody's for each holding into a numerical score and averaging them
+'based on portfolio weights of each holding.
+
+'The lower the "score" the better the average credit quality of the portfolio.
+'-------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 14) = "Avg Rating"
+TEMP0_MATRIX(NROWS + 1, 16) = TEMP0_MATRIX(NROWS + 1, 22)
+TEMP0_MATRIX(NROWS + 1, 17) = "Avg Yrs Maturity"
+'-------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 60) = TEMP0_MATRIX(NROWS + 1, 34)
+TEMP0_MATRIX(NROWS + 1, 63) = TEMP0_MATRIX(NROWS + 1, 66)
+TEMP0_MATRIX(NROWS + 1, 65) = TEMP0_MATRIX(NROWS + 1, 66)
+TEMP0_MATRIX(NROWS + 1, 68) = "Avg Yield"
+'-------------------------------------------------------------------------------
+TEMP0_MATRIX(NROWS + 1, 72) = TEMP0_MATRIX(NROWS + 1, 73)
+TEMP0_MATRIX(NROWS + 1, nn + 2) = TEMP0_MATRIX(NROWS + 1, nn + 6)
+TEMP0_MATRIX(NROWS + 1, nn + 7) = TEMP0_MATRIX(NROWS + 1, nn + 8)
+TEMP0_MATRIX(NROWS + 1, nn + 9) = TEMP0_MATRIX(NROWS + 1, nn + 10)
+TEMP0_MATRIX(NROWS + 1, nn + 11) = TEMP0_MATRIX(NROWS + 1, 74) * TEMP0_MATRIX(NROWS + 1, nn + 10)
+'-------------------------------------------------------------------------------
+
+If CREDIT_AGENCIES_FLAG = True Then
+    FIND_STR = ""
+    n = 2: TEMP0_VAL = TEMP0_MATRIX(NROWS + 1, 4): GoSub CREDIT_AGENCIES_LINE
+    TEMP0_MATRIX(NROWS + 1, 2) = FIND_STR
+    'This is a weighted average Moody's rating for the overall portfolio.
+    'This rating is created by translating the Moody's rating for each holding
+    'into a numerical score and averaging them based on portfolio weights of each
+    'holding.  Finally, the average is converted to a text rating.
+Else
+    TEMP0_MATRIX(NROWS + 1, 2) = ""
+End If
+'-------------------------------------------------------------------------------
+If CREDIT_AGENCIES_FLAG = True Then
+    FIND_STR = ""
+    n = 3: TEMP0_VAL = TEMP0_MATRIX(NROWS + 1, 5): GoSub CREDIT_AGENCIES_LINE
+    TEMP0_MATRIX(NROWS + 1, 3) = FIND_STR
+    'This is a weighted average S&P/Fitch rating for the overall portfolio.
+    'This rating is created by translating the S&P rating for each holding
+    'into a numerical score and averaging them based on portfolio weights of
+    'each holding.  Finally, the average score is converted back to a text rating.
+Else
+    TEMP0_MATRIX(NROWS + 1, 3) = ""
+End If
+
+'-------------------------------------------------------------------------------
+k = h(1) + h(2)
+jj = hh + k + h(3)
+If CREDIT_AGENCIES_FLAG = True Then
+    For j = 1 To k
+        FIND_STR = ""
+        n = 2: TEMP0_VAL = Round(TEMP0_MATRIX(NROWS + 1, jj + j), 2): GoSub CREDIT_AGENCIES_LINE
+        TEMP0_MATRIX(NROWS + 1, jj + j) = FIND_STR
+        'This is a weighted average S&P/Fitch rating for the overall portfolio.
+        'This rating is created by translating the S&P rating for each holding
+        'into a numerical score and averaging them based on portfolio weights of
+        'each holding.  Finally, the average score is converted back to a text rating.
+    Next j
+Else
+    For j = 1 To k: TEMP0_MATRIX(NROWS + 1, jj + j) = "": Next j
+End If
+
+'-------------------------------------------------------------------------------
+Select Case OUTPUT
+'-------------------------------------------------------------------------------
+Case 0
+'-------------------------------------------------------------------------------
+    BOND_PORT_ANALYSIS_FUNC = TEMP0_MATRIX
+'-------------------------------------------------------------------------------
+Case 1
+'-------------------------------------------------------------------------------
+    GoSub CASH_FLOW_TABLE_LINE 'Portfolio Cash Flow Table
+    Erase TEMP0_MATRIX
+    BOND_PORT_ANALYSIS_FUNC = TEMP1_MATRIX
+'-------------------------------------------------------------------------------
+Case 2
+'-------------------------------------------------------------------------------
+    GoSub MATURITY_TABLE_LINE 'Bond Portfolio Maturity Table
+    Erase TEMP0_MATRIX
+    BOND_PORT_ANALYSIS_FUNC = TEMP2_MATRIX
+'-------------------------------------------------------------------------------
+Case 3
+'-------------------------------------------------------------------------------
+    GoSub BOND_TYPE_TABLE_LINE 'Portfolio Bond Type Table
+    Erase TEMP0_MATRIX
+    BOND_PORT_ANALYSIS_FUNC = TEMP3_MATRIX
+
+'-------------------------------------------------------------------------------
+Case 4
+'-------------------------------------------------------------------------------
+    GoSub CREDIT_QUALITY_TABLE_LINE 'Portfolio Credit Quality Table
+    Erase TEMP0_MATRIX
+    BOND_PORT_ANALYSIS_FUNC = TEMP4_MATRIX
+'-------------------------------------------------------------------------------
+Case Else
+'-------------------------------------------------------------------------------
+    GoSub CASH_FLOW_TABLE_LINE: GoSub MATURITY_TABLE_LINE: GoSub BOND_TYPE_TABLE_LINE: GoSub CREDIT_QUALITY_TABLE_LINE
+    BOND_PORT_ANALYSIS_FUNC = Array(TEMP0_MATRIX, TEMP1_MATRIX, TEMP2_MATRIX, TEMP3_MATRIX, TEMP4_MATRIX)
+'-------------------------------------------------------------------------------
+End Select
+
+'-------------------------------------------------------------------------------
+Exit Function
+'------------------------------------------------------------------------------------------------------------------
+HEADINGS_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    If HEADINGS0_STR <> "" Then: GoTo 1985
+    NCOLUMNS = 19
+    ReDim HEADINGS_ARR(1 To NCOLUMNS) '19 Sections
+    For j = 1 To NCOLUMNS: HEADINGS_ARR(j) = "": Next j
+    HEADINGS_ARR(1) = "I) VALOR,I) MOODY,I) S&P/FITCH,I) MOODY SCORE,I) S&P/FITCH SCORE,I) MOODY VALUE,I) S&P/FITCH VALUE,I) MOODY RANK,I) S&P/FITCH RANK,I) AVG RANK,I) AVG TIER,I) INSURANCE,I) CUSIP,I) ISSUE NAME,I) TYPE,I) COUPON,I) COUPON/YEAR,I) ADJUSTED COUPON/YEAR,I) MATURITY,I) 1ST COUPON MONTH,I) YEARS TO MATURITY,I) WEIGHTED YEAR TO MATURITY,I) CALL PRICE,I) CALL DATE,"
+    HEADINGS_ARR(2) = "II) PURCHASE DATE,II) PURCHASE PRICE,II) PURCHASE QUANTITY,II) PURCHASE FEES,II) ADJUSTED PRICE,II) TOTAL COST,II) ANNUAL COUPON,II) ADJUSTED QUANTITY,II) ADJUSTED FEES,II) WEIGHTED YTM,II) COUPON AMOUNT,"
+    HEADINGS_ARR(3) = "III) PRE-TAX PAYMENTS: JANUARY,III) PRE-TAX PAYMENTS: FEBRUARY,III) PRE-TAX PAYMENTS: MARCH,III) PRE-TAX PAYMENTS: APRIL,III) PRE-TAX PAYMENTS: MAY,III) PRE-TAX PAYMENTS: JUNE,III) PRE-TAX PAYMENTS: JULY,III) PRE-TAX PAYMENTS: AUGUST,III) PRE-TAX PAYMENTS: SEPTEMBER,III) PRE-TAX PAYMENTS: OCTOBER,III) PRE-TAX PAYMENTS: NOVEMBER,III) PRE-TAX PAYMENTS: DECEMBER,"
+    HEADINGS_ARR(4) = "IV) AFTER-TAX PAYMENTS: JANUARY,IV) AFTER-TAX PAYMENTS: FEBRUARY,IV) AFTER-TAX PAYMENTS: MARCH,IV) AFTER-TAX PAYMENTS: APRIL,IV) AFTER-TAX PAYMENTS: MAY,IV) AFTER-TAX PAYMENTS: JUNE,IV) AFTER-TAX PAYMENTS: JULY,IV) AFTER-TAX PAYMENTS: AUGUST,IV) AFTER-TAX PAYMENTS: SEPTEMBER,IV) AFTER-TAX PAYMENTS: OCTOBER,IV) AFTER-TAX PAYMENTS: NOVEMBER,IV) AFTER-TAX PAYMENTS: DECEMBER,"
+    HEADINGS_ARR(5) = "V) YTM AT BUY,V) CURRENT PRICE,V) ADJUSTED PRICE,V) YTM,V) YTC,V) LY,V) WEIGHTED YLD,V) WEIGHTED AT YLD,V) ADJUSTED MATURITY,V) BOND TYPE INDEX,V) FAIR YTM,V) FAIR PRICE,V) LY PREM,V) PREMIUM WEIGHT,V) MARKET VALUE,V) PERCENT PORTFOLIO,V) ADJUSTED LY,"
+    HEADINGS_ARR(19) = "XIX) INTEREST EARNED,XIX) TOTAL RETURN,XIX) MODIFIED DURATION," & "XIX) PRICE IF (-)" & Format(DELTA_VAL * 10000, 0#) & "BP,XIX) PRICE IF (+)" & Format(DELTA_VAL * 10000, 0#) & "BP,XIX) DURATION,XIX) DURATION WEIGHT,XIX) BOND CONVEXITY,XIX) CONVEXITY WEIGHT,XIX) BOND RISK,XIX) RISK WEIGHT,XIX) BOND SENSITIVITY,"
+    k = h(1)
+    For j = 1 To k
+        LOOK_STR = Format(PORT_BOND_MATURITIES_MATRIX(j, 2), "0.0")
+        HEADINGS_ARR(6) = HEADINGS_ARR(6) & "VI) VALUE BY MATURITY BRACKET: " & LOOK_STR & " Years" & ","
+        HEADINGS_ARR(10) = HEADINGS_ARR(10) & "X) CREDIT QUALITY BY MATURITY BRACKET: " & LOOK_STR & " Years" & ","
+        HEADINGS_ARR(15) = HEADINGS_ARR(15) & "XV) PRE-TAX YIELD BY MATURITY BRACKET: " & LOOK_STR & " Years" & ","
+        HEADINGS_ARR(16) = HEADINGS_ARR(16) & "XVI) AFTER-TAX YIELD BY MATURITY BRACKET: " & LOOK_STR & " Years" & ","
+    Next j
+    k = h(2)
+    For j = 1 To k
+        LOOK_STR = PORT_BOND_TYPES_MATRIX(j, 1)
+        HEADINGS_ARR(7) = HEADINGS_ARR(7) & "VII) VALUE BY BOND TYPE: " & LOOK_STR & ","
+        HEADINGS_ARR(9) = HEADINGS_ARR(9) & "IX) CREDIT QUALITY BY BOND TYPE: " & LOOK_STR & ","
+        HEADINGS_ARR(11) = HEADINGS_ARR(11) & "XI) MODIFIED DURATION BY BOND TYPE: " & LOOK_STR & ","
+        HEADINGS_ARR(13) = HEADINGS_ARR(13) & "XIII) PRE-TAX YIELD BY BOND TYPE: " & LOOK_STR & ","
+        HEADINGS_ARR(14) = HEADINGS_ARR(14) & "XIV) AFTER-TAX YIELD BY BOND TYPE: " & LOOK_STR & ","
+    Next j
+    k = h(3)
+    For j = 1 To k
+        LOOK_STR = PORT_CREDIT_QUALITIES_MATRIX(j, 1)
+        HEADINGS_ARR(8) = HEADINGS_ARR(8) & "VIII) VALUE BY CREDIT QUALITY: " & LOOK_STR & ","
+        HEADINGS_ARR(12) = HEADINGS_ARR(12) & "XII) MODIFIED DURATION BY CREDIT QUALITY: " & LOOK_STR & ","
+        HEADINGS_ARR(17) = HEADINGS_ARR(17) & "XVII) PRE-TAX YIELD BY CREDIT QUALITY: " & LOOK_STR & ","
+        HEADINGS_ARR(18) = HEADINGS_ARR(18) & "XVIII) AFTER-TAX YIELD BY CREDIT QUALITY: " & LOOK_STR & ","
+    Next j
+    HEADINGS0_STR = ""
+    For j = 1 To NCOLUMNS
+        If HEADINGS_ARR(j) <> "" Then: HEADINGS0_STR = HEADINGS0_STR & HEADINGS_ARR(j)
+    Next j
+    Erase HEADINGS_ARR
+1985:
+    NCOLUMNS = 0: i = 1
+    Do
+        j = InStr(i, HEADINGS0_STR, ",")
+        NCOLUMNS = NCOLUMNS + 1
+        i = j + 1
+    Loop Until i = 1
+    NCOLUMNS = NCOLUMNS - 1
+    ReDim TEMP0_MATRIX(0 To NROWS + 1, 1 To NCOLUMNS)
+    i = 1
+    For k = 1 To NCOLUMNS
+        j = InStr(i, HEADINGS0_STR, ",")
+        TEMP0_MATRIX(0, k) = Mid(HEADINGS0_STR, i, j - i)
+        i = j + 1
+    Next k
+    For i = 1 To NROWS + 1: For j = 1 To NCOLUMNS: TEMP0_MATRIX(i, j) = "": Next j: Next i
+    
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+CASH_FLOW_TABLE_LINE: 'Portfolio Cash Flow Table
+'This routine shows the monthly and quarterly cash flows that the portfolio
+'will provide.  After tax ash flows from each bond are reduced based on the
+'tax rate that applies to the bond's type (ie. muni, tres, agency, corp).
+'Tax rates are taken from the tax rate table.
+'------------------------------------------------------------------------------------------------------------------
+    k = 12
+    ReDim TEMP1_MATRIX(0 To k + 1, 1 To 3)
+    HEADINGS1_STR = "MONTH,PRE-TAX CASH FLOW,AFTER-TAX CASH FLOW,"
+    i = 1
+    For l = 1 To 3
+        j = InStr(i, HEADINGS1_STR, ",")
+        TEMP1_MATRIX(0, l) = Mid(HEADINGS1_STR, i, j - i)
+        i = j + 1
+    Next l
+    HEADINGS1_STR = "JANUARY,FEBRUARY,MARCH,APRIL,MAY,JUNE,JULY,AUGUST,SEPTEMBER,OCTOBER,NOVEMBER,DECEMBER,TOTAL,"
+    i = 1
+    For l = 1 To 13
+        j = InStr(i, HEADINGS1_STR, ",")
+        TEMP1_MATRIX(l, 1) = Mid(HEADINGS1_STR, i, j - i)
+        i = j + 1
+    Next l
+    For j = 1 To k
+        TEMP1_MATRIX(j, 2) = TEMP0_MATRIX(NROWS + 1, 35 + j)
+        TEMP1_MATRIX(k + 1, 2) = TEMP1_MATRIX(k + 1, 2) + TEMP1_MATRIX(j, 2)
+        
+        TEMP1_MATRIX(j, 3) = TEMP0_MATRIX(NROWS + 1, 47 + j)
+        TEMP1_MATRIX(k + 1, 3) = TEMP1_MATRIX(k + 1, 3) + TEMP1_MATRIX(j, 3)
+    Next j
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+MATURITY_TABLE_LINE: 'Bond Portfolio Maturity Table
+'This routine displays the amount of the portfolio that will be maturing in
+'various timeframes.  Also, for all the bonds maturing within a given time
+'bracket, average yield and credit quality are computed.  The time brackets
+'are user customizable.
+'------------------------------------------------------------------------------------------------------------------
+    If PORT_MATURITIES_FLAG = False Then Return
+    k = h(1)
+    ReDim TEMP2_MATRIX(0 To k + 1, 1 To 13)
+    HEADINGS1_STR = "MATURITY,MATURITY IN DAYS,PRETAX YIELD,AFTER TAX YIELD,AVG RATING,AMOUNT,PERCENT,CUMULATIVE PERCENT,DESIRED PERCENT,ACTION,ADJUSTMENT,NEW AMOUNT,WEIGHTED MATURITY,"
+    i = 1
+    For l = 1 To 13
+        j = InStr(i, HEADINGS1_STR, ",")
+        TEMP2_MATRIX(0, l) = Mid(HEADINGS1_STR, i, j - i)
+        i = j + 1
+    Next l
+    '------------------------------------------------------------------------------
+    'This column shows the percent of the portfolio maturing between now and the
+    'Maturity for the given row. For example, for the row for maturity at 10 years,
+    'percent shows percent of maturity maturing between 5 and 10 years while cumulative
+    'percent shows the percent of the portfolio maturing between now and 10 years.
+    '------------------------------------------------------------------------------
+    kk = hh + h(1) + h(2) * 2 + h(3) '100
+    ii = kk + h(1) + h(2) * 3 + h(3) '129
+    jj = ii + h(1) '135
+    TEMP2_MATRIX(k + 1, 9) = 0
+    For j = 1 To k
+        TEMP2_MATRIX(j, 1) = Format(PORT_BOND_MATURITIES_MATRIX(j, 2), "0.0") & " Years"
+        TEMP2_MATRIX(j, 2) = COUNT_DAYS_FUNC(SETTLEMENT, PORT_BOND_MATURITIES_MATRIX(j, 1), 0)
+        If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+            TEMP2_MATRIX(j, 3) = TEMP0_MATRIX(NROWS + 1, ii + j)
+        Else
+            TEMP2_MATRIX(j, 3) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, jj + j) <> 0 Then
+            TEMP2_MATRIX(j, 4) = TEMP0_MATRIX(NROWS + 1, jj + j)
+        Else
+            TEMP2_MATRIX(j, 4) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, kk + j) <> 0 Then
+            TEMP2_MATRIX(j, 5) = TEMP0_MATRIX(NROWS + 1, kk + j)
+        Else
+            TEMP2_MATRIX(j, 5) = NA_STR
+        End If
+        TEMP2_MATRIX(j, 6) = TEMP0_MATRIX(NROWS + 1, 76 + j)
+    
+        TEMP2_MATRIX(j, 9) = PORT_BOND_MATURITIES_MATRIX(j, 3)
+        TEMP2_MATRIX(k + 1, 9) = TEMP2_MATRIX(k + 1, 9) + TEMP2_MATRIX(j, 9)
+    Next j
+    TEMP2_MATRIX(k + 1, 1) = "OVERALL"
+    TEMP2_MATRIX(k + 1, 2) = ""
+    
+    If TEMP0_MATRIX(NROWS + 1, 66) <> 0 Then
+        TEMP2_MATRIX(k + 1, 3) = TEMP0_MATRIX(NROWS + 1, 66)
+    Else
+        TEMP2_MATRIX(k + 1, 3) = NA_STR
+    End If
+    
+    If TEMP0_MATRIX(NROWS + 1, 67) <> 0 Then
+        TEMP2_MATRIX(k + 1, 4) = TEMP0_MATRIX(NROWS + 1, 67)
+    Else
+        TEMP2_MATRIX(k + 1, 4) = NA_STR
+    End If
+    
+    If TEMP0_MATRIX(NROWS + 1, 2) <> "" Then
+        TEMP2_MATRIX(k + 1, 5) = TEMP0_MATRIX(NROWS + 1, 2)
+    Else
+        TEMP2_MATRIX(k + 1, 5) = NA_STR
+    End If
+    
+    TEMP2_MATRIX(1, 8) = 0: TEMP2_MATRIX(k + 1, 6) = TEMP0_MATRIX(NROWS + 1, 74)
+    TEMP2_MATRIX(k + 1, 7) = 0: TEMP2_MATRIX(k + 1, 8) = ""
+    TEMP2_MATRIX(k + 1, 10) = "": TEMP2_MATRIX(k + 1, 11) = ""
+    TEMP2_MATRIX(k + 1, 12) = 0: TEMP2_MATRIX(k + 1, 13) = 0
+    
+    If TEMP2_MATRIX(k + 1, 6) = 0 Then: Return
+    For j = 1 To k
+        TEMP2_MATRIX(j, 7) = TEMP2_MATRIX(j, 6) / TEMP2_MATRIX(k + 1, 6)
+        TEMP2_MATRIX(k + 1, 7) = TEMP2_MATRIX(k + 1, 7) + TEMP2_MATRIX(j, 7)
+        TEMP2_MATRIX(j, 8) = TEMP2_MATRIX(j, 8) + TEMP2_MATRIX(k + 1, 7)
+    
+        If Abs((TEMP2_MATRIX(j, 9) * TEMP2_MATRIX(k + 1, 6)) - TEMP2_MATRIX(j, 6)) > REBALANCING_SLACK Then
+            If (TEMP2_MATRIX(j, 9) * TEMP2_MATRIX(k + 1, 6)) - TEMP2_MATRIX(j, 6) > 0 Then
+                TEMP2_MATRIX(j, 10) = "Add"
+            Else
+                TEMP2_MATRIX(j, 10) = "Remove"
+            End If
+            TEMP2_MATRIX(j, 11) = (TEMP2_MATRIX(j, 9) * TEMP2_MATRIX(k + 1, 6)) - TEMP2_MATRIX(j, 6)
+            TEMP2_MATRIX(j, 12) = TEMP2_MATRIX(j, 6) + TEMP2_MATRIX(j, 11)
+        Else
+            TEMP2_MATRIX(j, 10) = ""
+            TEMP2_MATRIX(j, 11) = "None"
+            TEMP2_MATRIX(j, 12) = TEMP2_MATRIX(j, 6)
+        End If
+        TEMP2_MATRIX(k + 1, 12) = TEMP2_MATRIX(k + 1, 12) + TEMP2_MATRIX(j, 12)
+        'This total may not be exactly the same as the portfolio amount due
+        'to rounding errors. To eliminate these errors, adjust the Rebalancing
+        'Slack setting.
+        
+        If IsNumeric(PORT_BOND_MATURITIES_MATRIX(j, 2)) Then
+            Select Case j
+            Case 1
+'                TEMP2_MATRIX(j, 13) = TEMP2_MATRIX(j, 9) * (PORT_BOND_MATURITIES_MATRIX(j, 2) / 2)
+                TEMP2_MATRIX(j, 13) = TEMP2_MATRIX(j, 9) * ((PORT_BOND_MATURITIES_MATRIX(j, 2) / 2) / 12)
+            Case 2
+'                TEMP2_MATRIX(j, 13) = TEMP2_MATRIX(j, 9) * (PORT_BOND_MATURITIES_MATRIX(j, 2) - PORT_BOND_MATURITIES_MATRIX(j - 1, 2))
+                TEMP2_MATRIX(j, 13) = TEMP2_MATRIX(j, 9) * (PORT_BOND_MATURITIES_MATRIX(j, 2) - (PORT_BOND_MATURITIES_MATRIX(j - 1, 2) / 12))
+            Case Else
+                TEMP2_MATRIX(j, 13) = TEMP2_MATRIX(j, 9) * (PORT_BOND_MATURITIES_MATRIX(j - 1, 2) + ((PORT_BOND_MATURITIES_MATRIX(j, 2) - PORT_BOND_MATURITIES_MATRIX(j - 1, 2)) / 2))
+            End Select
+            'TEMP2_MATRIX(j, 13) = PORT_BOND_MATURITIES_MATRIX(j, 2) * TEMP2_MATRIX(j, 9)
+            TEMP2_MATRIX(k + 1, 13) = TEMP2_MATRIX(k + 1, 13) + TEMP2_MATRIX(j, 13)
+            'Target average maturity in years
+        End If
+    Next j
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+BOND_TYPE_TABLE_LINE: 'Portfolio Bond Type Table
+'This routine displays the amount of the portfolio that's in each type of
+'Bond (muni, corp, tres, agency) and also shows the current portfolio yield
+'by bond type.  Average Yield, duration, and credit quality per bond type
+'is also displayed.
+'------------------------------------------------------------------------------------------------------------------
+    If PORT_BOND_TYPES_FLAG = False Then Return
+    k = h(2)
+    ReDim TEMP3_MATRIX(0 To k + 1, 1 To 11)
+    HEADINGS1_STR = "BOND TYPE,PRE-TAX YIELD,AFTER-TAX YIELD,AVG RATING,MODIFIED DURATION,AMOUNT,PERCENT,DESIRED PERCENT,ACTION,ADJUSTMENT,NEW AMOUNT,"
+    i = 1
+    For l = 1 To 11
+        j = InStr(i, HEADINGS1_STR, ",")
+        TEMP3_MATRIX(0, l) = Mid(HEADINGS1_STR, i, j - i)
+        i = j + 1
+    Next l
+'-------------------------------------------------------------------------------
+    
+    TEMP3_MATRIX(k + 1, 1) = "OVERALL"
+    
+    If TEMP0_MATRIX(NROWS + 1, 66) <> 0 Then
+        TEMP3_MATRIX(k + 1, 2) = TEMP0_MATRIX(NROWS + 1, 66)
+    Else
+        TEMP3_MATRIX(k + 1, 2) = NA_STR
+    End If
+    
+    If TEMP0_MATRIX(NROWS + 1, 67) <> 0 Then
+        TEMP3_MATRIX(k + 1, 3) = TEMP0_MATRIX(NROWS + 1, 67)
+    Else
+        TEMP3_MATRIX(k + 1, 3) = NA_STR
+    End If
+
+    If TEMP0_MATRIX(NROWS + 1, 2) <> "" Then
+        TEMP3_MATRIX(k + 1, 4) = TEMP0_MATRIX(NROWS + 1, 2)
+    Else
+        TEMP3_MATRIX(k + 1, 4) = NA_STR
+    End If
+    
+    If TEMP0_MATRIX(NROWS + 1, nn + 2) <> 0 Then
+        TEMP3_MATRIX(k + 1, 5) = TEMP0_MATRIX(NROWS + 1, nn + 2)
+    Else
+        TEMP3_MATRIX(k + 1, 5) = NA_STR
+    End If
+
+    TEMP3_MATRIX(k + 1, 6) = 0: TEMP3_MATRIX(k + 1, 7) = 0
+    TEMP3_MATRIX(k + 1, 8) = 0: TEMP3_MATRIX(k + 1, 9) = ""
+    TEMP3_MATRIX(k + 1, 10) = "": TEMP3_MATRIX(k + 1, 11) = 0
+    
+    mm = hh + h(1) '82
+    kk = mm + h(2) + h(3) '95
+    ll = kk + h(1) + h(2) '106
+    ii = ll + h(2) + h(3) '119
+    jj = ii + h(2)
+    For j = 1 To k
+        TEMP3_MATRIX(j, 1) = PORT_BOND_TYPES_MATRIX(j, 1)
+        TEMP3_MATRIX(j, 8) = PORT_BOND_TYPES_MATRIX(j, 3)
+        TEMP3_MATRIX(k + 1, 8) = TEMP3_MATRIX(k + 1, 8) + TEMP3_MATRIX(j, 8)
+        
+        If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+            TEMP3_MATRIX(j, 2) = TEMP0_MATRIX(NROWS + 1, ii + j)
+        Else
+            TEMP3_MATRIX(j, 2) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, jj + j) <> 0 Then
+            TEMP3_MATRIX(j, 3) = TEMP0_MATRIX(NROWS + 1, jj + j)
+        Else
+            TEMP3_MATRIX(j, 3) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, kk + j) <> 0 Then
+            TEMP3_MATRIX(j, 4) = TEMP0_MATRIX(NROWS + 1, kk + j)
+        Else
+            TEMP3_MATRIX(j, 4) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, ll + j) <> 0 Then
+            TEMP3_MATRIX(j, 5) = TEMP0_MATRIX(NROWS + 1, ll + j)
+        Else
+            TEMP3_MATRIX(j, 5) = NA_STR
+        End If
+        TEMP3_MATRIX(j, 6) = TEMP0_MATRIX(NROWS + 1, mm + j)
+        TEMP3_MATRIX(k + 1, 6) = TEMP3_MATRIX(k + 1, 6) + TEMP3_MATRIX(j, 6)
+    Next j
+    
+    For j = 1 To k
+        TEMP3_MATRIX(j, 7) = TEMP3_MATRIX(j, 6) / TEMP3_MATRIX(k + 1, 6)
+        TEMP3_MATRIX(k + 1, 7) = TEMP3_MATRIX(k + 1, 7) + TEMP3_MATRIX(j, 7)
+        
+        If Abs((TEMP3_MATRIX(j, 8) * TEMP3_MATRIX(k + 1, 6)) - TEMP3_MATRIX(j, 6)) > REBALANCING_SLACK Then
+            If (TEMP3_MATRIX(j, 8) * TEMP3_MATRIX(k + 1, 6)) - TEMP3_MATRIX(j, 6) > 0 Then
+                TEMP3_MATRIX(j, 9) = "Add"
+            Else
+                TEMP3_MATRIX(j, 9) = "Remove"
+            End If
+            TEMP3_MATRIX(j, 10) = (TEMP3_MATRIX(j, 8) * TEMP3_MATRIX(k + 1, 6)) - TEMP3_MATRIX(j, 6)
+            TEMP3_MATRIX(j, 11) = TEMP3_MATRIX(j, 6) + TEMP3_MATRIX(j, 10)
+        Else
+            TEMP3_MATRIX(j, 9) = ""
+            TEMP3_MATRIX(j, 10) = "None"
+            TEMP3_MATRIX(j, 11) = TEMP3_MATRIX(j, 6)
+        End If
+        TEMP3_MATRIX(k + 1, 11) = TEMP3_MATRIX(k + 1, 11) + TEMP3_MATRIX(j, 11)
+        'This total may not be exactly the same as the portfolio amount due
+        'to rounding errors. To eliminate these errors, adjust the Rebalancing
+        'Slack setting.
+    Next j
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+CREDIT_QUALITY_TABLE_LINE: 'Portfolio Credit Quality Table
+'Breaks down portfolio value by credit quality and shows yields
+'for each credit tier.
+'------------------------------------------------------------------------------------------------------------------
+    If PORT_CREDIT_QUALITIES_FLAG = False Then Return
+    k = h(3)
+    ReDim TEMP4_MATRIX(0 To k + 1, 1 To 11)
+    HEADINGS1_STR = "CREDIT QUALITY,PRE-TAX YIELD,AFTER-TAX YIELD,MODIFIED DURATION,AMOUNT,PERCENT,CUMULATIVE PERCENT,DESIRED PERCENT,ACTION,ADJUSTMENT,NEW AMOUNT,"
+    i = 1
+    For l = 1 To 11
+        j = InStr(i, HEADINGS1_STR, ",")
+        TEMP4_MATRIX(0, l) = Mid(HEADINGS1_STR, i, j - i)
+        i = j + 1
+    Next l
+    '------------------------------------------------------------------------------
+    'Cumulative percent in the percent of the portfolio that has a credit rating as
+    'good or better than the rating for the given row. For example, for the row that
+    'lists credit quality as Upper Med, the cumulative percent shows the percent of
+    'the portfolio with a credit rating at least as good as Upper Med.
+    '------------------------------------------------------------------------------
+    
+    TEMP4_MATRIX(k + 1, 1) = "OVERALL"
+    
+    If TEMP0_MATRIX(NROWS + 1, 66) <> 0 Then
+        TEMP4_MATRIX(k + 1, 2) = TEMP0_MATRIX(NROWS + 1, 66)
+    Else
+        TEMP4_MATRIX(k + 1, 2) = NA_STR
+    End If
+    
+    If TEMP0_MATRIX(NROWS + 1, 67) <> 0 Then
+        TEMP4_MATRIX(k + 1, 3) = TEMP0_MATRIX(NROWS + 1, 67)
+    Else
+        TEMP4_MATRIX(k + 1, 3) = NA_STR
+    End If
+    
+    If TEMP0_MATRIX(NROWS + 1, nn + 2) <> 0 Then
+        TEMP4_MATRIX(k + 1, 4) = TEMP0_MATRIX(NROWS + 1, nn + 2)
+    Else
+        TEMP4_MATRIX(k + 1, 4) = NA_STR
+    End If
+    
+    TEMP4_MATRIX(1, 7) = 0: TEMP4_MATRIX(k + 1, 5) = 0
+    TEMP4_MATRIX(k + 1, 6) = 0: TEMP4_MATRIX(k + 1, 7) = ""
+    TEMP4_MATRIX(k + 1, 8) = 0: TEMP4_MATRIX(k + 1, 9) = ""
+    TEMP4_MATRIX(k + 1, 10) = "": TEMP4_MATRIX(k + 1, 11) = 0
+
+    ll = hh + h(1) + h(2) '87
+    kk = ll + h(1) + h(2) * 2 + h(3)  '111
+    ii = kk + h(1) * 2 + h(2) * 2 + h(3) '141
+    jj = ii + h(3) '149
+    For j = 1 To k
+        TEMP4_MATRIX(j, 1) = PORT_CREDIT_QUALITIES_MATRIX(j, 1)
+        TEMP4_MATRIX(j, 8) = PORT_CREDIT_QUALITIES_MATRIX(j, 2)
+        TEMP4_MATRIX(k + 1, 8) = TEMP4_MATRIX(k + 1, 8) + TEMP4_MATRIX(j, 8)
+        
+        If TEMP0_MATRIX(NROWS + 1, ii + j) <> 0 Then
+            TEMP4_MATRIX(j, 2) = TEMP0_MATRIX(NROWS + 1, ii + j)
+        Else
+            TEMP4_MATRIX(j, 2) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, jj + j) <> 0 Then
+            TEMP4_MATRIX(j, 3) = TEMP0_MATRIX(NROWS + 1, jj + j)
+        Else
+            TEMP4_MATRIX(j, 3) = NA_STR
+        End If
+        If TEMP0_MATRIX(NROWS + 1, kk + j) <> 0 Then
+            TEMP4_MATRIX(j, 4) = TEMP0_MATRIX(NROWS + 1, kk + j)
+        Else
+            TEMP4_MATRIX(j, 4) = NA_STR
+        End If
+        TEMP4_MATRIX(j, 5) = TEMP0_MATRIX(NROWS + 1, ll + j)
+        TEMP4_MATRIX(k + 1, 5) = TEMP4_MATRIX(k + 1, 5) + TEMP4_MATRIX(j, 5)
+    Next j
+    
+    For j = 1 To k
+
+        TEMP4_MATRIX(j, 6) = TEMP4_MATRIX(j, 5) / TEMP4_MATRIX(k + 1, 5)
+        TEMP4_MATRIX(k + 1, 6) = TEMP4_MATRIX(k + 1, 6) + TEMP4_MATRIX(j, 6)
+        TEMP4_MATRIX(j, 7) = TEMP4_MATRIX(j, 7) + TEMP4_MATRIX(k + 1, 6)
+    
+        If Abs((TEMP4_MATRIX(j, 8) * TEMP4_MATRIX(k + 1, 5)) - TEMP4_MATRIX(j, 5)) > REBALANCING_SLACK Then
+            If (TEMP4_MATRIX(j, 8) * TEMP4_MATRIX(k + 1, 5)) - TEMP4_MATRIX(j, 5) > 0 Then
+                TEMP4_MATRIX(j, 9) = "Add"
+            Else
+                TEMP4_MATRIX(j, 9) = "Remove"
+            End If
+            TEMP4_MATRIX(j, 10) = (TEMP4_MATRIX(j, 8) * TEMP4_MATRIX(k + 1, 5)) - TEMP4_MATRIX(j, 5)
+            TEMP4_MATRIX(j, 11) = TEMP4_MATRIX(j, 5) + TEMP4_MATRIX(j, 10)
+        Else
+            TEMP4_MATRIX(j, 9) = ""
+            TEMP4_MATRIX(j, 10) = "None"
+            TEMP4_MATRIX(j, 11) = TEMP4_MATRIX(j, 5)
+        End If
+        
+        TEMP4_MATRIX(k + 1, 11) = TEMP4_MATRIX(k + 1, 11) + TEMP4_MATRIX(j, 11)
+    
+    'This total may not be exactly the same as the portfolio amount due
+    'to rounding errors. To eliminate these errors, adjust the Rebalancing
+    'Slack setting.
+    
+    Next j
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+PORT_BOND_YIELD_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    Y_VAL = BOND_YIELD_FUNC(P_VAL, S_VAL, M_VAL, C_VAL, F_VAL, R_VAL, B_VAL, G_VAL)
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+PORT_BOND_PRICE_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    P_VAL = BOND_CASH_PRICE_FUNC(S_VAL, M_VAL, C_VAL, Y_VAL, F_VAL, R_VAL, B_VAL, 1)
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+BOND_PRICE_PARSE_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    l = InStr(1, TEMP1_VAL, "-")
+    If l = 0 Then
+        If Val(TEMP1_VAL) > 0 Then TEMP2_VAL = CDbl(TEMP1_VAL) Else GoTo 1983
+    Else
+        TEMP2_VAL = CDbl(Left(TEMP1_VAL, l - 1)) + (1 / 32) * CDbl(Mid(TEMP1_VAL, l + 1, 2))
+        If Len(Right(TEMP1_VAL, Len(TEMP1_VAL) - l - 2)) = 1 Then
+            If Mid(TEMP1_VAL, l + 3, 1) = "+" Then
+                TEMP2_VAL = TEMP2_VAL + 1 / 64
+            Else
+                TEMP2_VAL = TEMP2_VAL + CDbl(Mid(TEMP1_VAL, l + 3, 1)) * (1 / 256)
+            End If
+        End If
+    End If
+    
+    If TEMP2_VAL = 0 Then: GoTo 1983
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+PORT_TAXES_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    FIND_STR = "": m = h(2): n = 0
+    For l = 1 To m
+        If PORT_BOND_TYPES_MATRIX(l, 1) = LOOK_STR Then
+            n = l
+            FIND_STR = PORT_BOND_TYPES_MATRIX(l, 2)
+            If IsNumeric(FIND_STR) = False Then: FIND_STR = 0
+            Exit For
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+CREDIT_RATINGS_TIER_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    m = UBound(CREDIT_AGENCIES_MATRIX, 1)
+    n = 0
+    For l = 1 To m
+        If CREDIT_AGENCIES_MATRIX(l, 1) = LOOK_STR Then
+            If IsNumeric(CREDIT_AGENCIES_MATRIX(l, 4)) Then: n = CREDIT_AGENCIES_MATRIX(l, 4)
+            Exit For
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+CREDIT_RATINGS_SP_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    m = UBound(CREDIT_AGENCIES_MATRIX, 1)
+    n = 0
+    For l = 1 To m
+        If CREDIT_AGENCIES_MATRIX(l, 3) = LOOK_STR Then
+            n = l
+            Exit For
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+CREDIT_RATINGS_MOODY_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    m = UBound(CREDIT_AGENCIES_MATRIX, 1)
+    n = 0
+    For l = 1 To m
+        If CREDIT_AGENCIES_MATRIX(l, 2) = LOOK_STR Then
+            n = l
+            Exit For
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+CREDIT_AGENCIES_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    m = UBound(CREDIT_AGENCIES_MATRIX, 1) - 1
+    For l = 1 To m
+        If Val(CREDIT_AGENCIES_MATRIX(l, 1)) <> 0 And Val(CREDIT_AGENCIES_MATRIX(l + 1, 1)) <> 0 Then
+            If CDbl(CREDIT_AGENCIES_MATRIX(l, 1)) <= TEMP0_VAL And CDbl(CREDIT_AGENCIES_MATRIX(l + 1, 1)) > TEMP0_VAL Then
+                FIND_STR = CREDIT_AGENCIES_MATRIX(l, n)
+                Exit For
+            End If
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+MARKET_YIELDS1_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    m = UBound(MARKET_YIELDS_MATRIX, 2)
+    n = 0
+    For l = 1 To m
+        If MARKET_YIELDS_MATRIX(1, l) = LOOK_STR Then
+            n = l
+            Exit For
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+MARKET_YIELDS2_LINE:
+'------------------------------------------------------------------------------------------------------------------
+    m = UBound(MARKET_YIELDS_MATRIX, 1) - 1
+    TEMP1_VAL = "": TEMP2_VAL = ""
+    For l = 1 To m
+       If IsNumeric(MARKET_YIELDS_MATRIX(l, 1)) Then 'Exclude Headings
+            If (MARKET_YIELDS_MATRIX(l, 1) <= TEMP0_VAL) And (MARKET_YIELDS_MATRIX(l + 1, 1) > TEMP0_VAL) Then
+                If l + 2 < UBound(MARKET_YIELDS_MATRIX, 1) Then
+                    TEMP1_VAL = MARKET_YIELDS_MATRIX(l + 1, n)
+                    TEMP2_VAL = MARKET_YIELDS_MATRIX(l + 2, n)
+                Else
+                    TEMP1_VAL = MARKET_YIELDS_MATRIX(l + 0, n)
+                    TEMP2_VAL = MARKET_YIELDS_MATRIX(l + 1, n)
+                End If
+                Exit For
+            End If
+        End If
+    Next l
+'------------------------------------------------------------------------------------------------------------------
+Return
+'------------------------------------------------------------------------------------------------------------------
+ERROR_LABEL:
+BOND_PORT_ANALYSIS_FUNC = Err.number
+End Function
+
+'**********************************************************************************
+'**********************************************************************************
+'FUNCTION      : BOND_PORT_MATURITIES_FUNC
+'DESCRIPTION   :
+'LIBRARY       : BOND
+'GROUP         : PORT
+'ID            : 002
+'AUTHOR        : RAFAEL NICOLAS FERMIN COTA
+'LAST UPDATE   : 10/10/2013
+'**********************************************************************************
+'**********************************************************************************
+
+Function BOND_PORT_MATURITIES_FUNC(ByVal SETTLEMENT As Date, _
+ByRef YEARS_RNG As Variant)
+
+Dim i As Long
+Dim NROWS As Long
+Dim Y_VAL As Double
+Dim YEARS_ARR As Variant
+    
+On Error GoTo ERROR_LABEL
+
+'------------------------------------------------------------------------------
+If IsArray(YEARS_RNG) Then
+    YEARS_ARR = YEARS_RNG
+    If UBound(YEARS_ARR, 1) = 1 Then
+        YEARS_ARR = MATRIX_TRANSPOSE_FUNC(YEARS_ARR)
+    End If
+Else
+    ReDim YEARS_ARR(1 To 1, 1 To 1)
+    YEARS_ARR(1, 1) = YEARS_RNG
+End If
+NROWS = UBound(YEARS_ARR, 1)
+'------------------------------------------------------------------------------
+
+ReDim TEMP_VECTOR(1 To NROWS, 1 To 2)
+For i = 1 To NROWS
+    Y_VAL = YEARS_ARR(i, 1)
+    TEMP_VECTOR(i, 1) = EDATE_FUNC(SETTLEMENT, Y_VAL * 12)
+    TEMP_VECTOR(i, 2) = YEARFRAC_FUNC(SETTLEMENT, TEMP_VECTOR(i, 1), 0)
+Next i
+
+BOND_PORT_MATURITIES_FUNC = TEMP_VECTOR
+    
+Exit Function
+ERROR_LABEL:
+BOND_PORT_MATURITIES_FUNC = Err.number
+End Function
+
+
+'**********************************************************************************
+'**********************************************************************************
+'FUNCTION      : BOND_PORT_CREDIT_AGENCIES_TABLE_FUNC
+
+'DESCRIPTION   : Bond Rating Table:
+'A Bond 's ratings can be converted to a number using this table.  Then these
+'numbers can be used in calculations to determine a portfolio's average rating.
+'The average rating for the portfolio can then be converted back into a moody
+'and an S&P rating using this table.
+
+'LIBRARY       : BOND
+'GROUP         : PORT
+'ID            : 003
+'AUTHOR        : RAFAEL NICOLAS FERMIN COTA
+'LAST UPDATE   : 26/05/2013
+'**********************************************************************************
+'**********************************************************************************
+
+Function BOND_PORT_CREDIT_AGENCIES_TABLE_FUNC()
+
+Dim i As Long
+Dim j As Long
+Dim k As Long
+
+Dim ii As Long
+Dim jj As Long
+
+Dim NROWS As Long
+Const NCOLUMNS As Long = 5
+Dim HEADINGS1_STR As String
+Dim TEMP_MATRIX As Variant
+
+On Error GoTo ERROR_LABEL
+
+HEADINGS1_STR = "INDEX,MOODY,S&P/FITCH,TIER,DESCRIPTION,1,FDIC,FDIC,1,FDIC Insured Issue,2,Aaa,AAA,1,Prime. Maximum Safety,3,Aa1,AA+,2,High Grade. High Quality,4,Aa2,AA,2,,5,Aa3,AA-,2,,6,A1,A+,3,Upper Medium Grade,7,A2,A,3,,8,A3,A-,3,,9,Baa1,BBB+,4,Lower Medium Grade,10,Baa2,BBB,4,,"
+HEADINGS1_STR = HEADINGS1_STR & "11,Baa3,BBB-,4,,12,Ba1,BB+,5,Non Investment Grade,13,Ba2,BB,5,Speculative,14,Ba3,BB-,5,,15,B1,B+,6,Highly Speculative,16,B2,B,6,,17,B3,B-,6,,18,Caa,CCC+,7,Substantial Risk,19,Caa1,CCC,7,In Poor Standing,20,Caa2,CCC-,7,,21,Ca,CC,7,Extremely Speculative,"
+HEADINGS1_STR = HEADINGS1_STR & "22,C,C,7,May be in Default,23,NR,NR,8,Unknown rating or unrated bond,"
+
+i = 1: k = 0
+Do
+    j = InStr(i, HEADINGS1_STR, ",")
+    k = k + 1
+    i = j + 1
+Loop Until i = 1
+k = k - 1
+NROWS = k / NCOLUMNS
+i = 1
+ReDim TEMP_MATRIX(0 To NROWS - 1, 1 To NCOLUMNS)
+For ii = 1 To NROWS
+    For jj = 1 To NCOLUMNS
+        j = InStr(i, HEADINGS1_STR, ",")
+        TEMP_MATRIX(ii - 1, jj) = Mid(HEADINGS1_STR, i, j - i)
+        i = j + 1
+    Next jj
+Next ii
+BOND_PORT_CREDIT_AGENCIES_TABLE_FUNC = TEMP_MATRIX
+
+Exit Function
+ERROR_LABEL:
+BOND_PORT_CREDIT_AGENCIES_TABLE_FUNC = Err.number
+End Function
+
+
+'**********************************************************************************
+'**********************************************************************************
+'FUNCTION      : BOND_PORT_MARKET_YIELDS_FUNC
+
+'DESCRIPTION   : Bond Rates Table: The data entered into the table is interpolated
+'and then used to produce a simulated "market yield" value for a bond with a given
+'maturity.  This yield value is an estimate of the yield on a generic security with
+'a given maturity in years. Each bond's actual yield can then be compared with
+'this "market" yield. Note: These calculations don't adjust for differences in bond
+'quality so if the market yield curve data is for aaa and the bond being compared
+'is bbb, the results will not be valid.
+
+'LIBRARY       : BOND
+'GROUP         : PORT
+'ID            : 004
+'AUTHOR        : RAFAEL NICOLAS FERMIN COTA
+'LAST UPDATE   : 26/05/2013
+'**********************************************************************************
+'**********************************************************************************
+
+Function BOND_PORT_MARKET_YIELDS_FUNC(ByRef DATA_RNG As Variant, _
+Optional ByVal MIN_VAL As Double = 0, _
+Optional ByVal DELTA_VAL As Double = 1)
+
+Dim i As Long
+Dim j As Long
+
+Dim ii As Long
+Dim jj As Long
+Dim kk As Long
+
+Dim SROW As Long '--> Headings
+Dim NROWS As Long
+Dim SCOLUMN As Long
+Dim NCOLUMNS As Long
+
+Dim T_VAL As Double
+Dim DT_VAL As Double
+Dim TEMP_MATRIX As Variant
+Dim DATA_MATRIX As Variant
+
+On Error GoTo ERROR_LABEL
+
+DATA_MATRIX = DATA_RNG 'Include Headings
+SROW = LBound(DATA_MATRIX, 1)
+NROWS = UBound(DATA_MATRIX, 1)
+SCOLUMN = LBound(DATA_MATRIX, 2)
+NCOLUMNS = UBound(DATA_MATRIX, 2)
+
+GoSub HEADINGS_LINE
+
+T_VAL = MIN_VAL
+DT_VAL = T_VAL
+i = SROW + 1
+ii = 1
+GoSub ROW_LINE
+GoSub CALC0_LINE
+
+T_VAL = DATA_MATRIX(i, SCOLUMN)
+DT_VAL = T_VAL
+i = i + 1
+ii = kk
+GoSub ROW_LINE
+GoSub CALC0_LINE
+
+DT_VAL = DATA_MATRIX(i, SCOLUMN)
+ii = kk + 1
+For i = SROW + 3 To NROWS
+    DT_VAL = DT_VAL + DELTA_VAL
+    GoSub CALC1_LINE
+    GoSub INPUT_LINE
+    ii = ii + 1
+Next i
+BOND_PORT_MARKET_YIELDS_FUNC = TEMP_MATRIX
+
+'---------------------------------------------------------------------------------------
+Exit Function
+'---------------------------------------------------------------------------------------
+HEADINGS_LINE:
+'---------------------------------------------------------------------------------------
+    ii = DATA_MATRIX(NROWS, 1)
+    ii = (ii - MIN_VAL) / DELTA_VAL + 1
+    jj = NCOLUMNS - SCOLUMN + 1
+    ReDim TEMP_MATRIX(0 To ii, 1 To jj)
+    jj = 1
+    For j = SCOLUMN To NCOLUMNS
+        TEMP_MATRIX(0, jj) = DATA_MATRIX(SROW, j)
+        jj = jj + 1
+    Next j
+'---------------------------------------------------------------------------------------
+Return
+'---------------------------------------------------------------------------------------
+INPUT_LINE:
+'---------------------------------------------------------------------------------------
+    TEMP_MATRIX(ii, 1) = DT_VAL
+    jj = 2
+    For j = SCOLUMN + 1 To NCOLUMNS
+        TEMP_MATRIX(ii, jj) = DATA_MATRIX(i, j)
+        jj = jj + 1
+    Next j
+'---------------------------------------------------------------------------------------
+Return
+'---------------------------------------------------------------------------------------
+ROW_LINE:
+'---------------------------------------------------------------------------------------
+    Do While DT_VAL < DATA_MATRIX(i, SCOLUMN) 'Starting ROw
+        TEMP_MATRIX(ii, 1) = DT_VAL
+        ii = ii + 1
+        DT_VAL = DT_VAL + DELTA_VAL
+    Loop
+    GoSub INPUT_LINE
+'---------------------------------------------------------------------------------------
+Return
+'---------------------------------------------------------------------------------------
+CALC0_LINE:
+'---------------------------------------------------------------------------------------
+    kk = ii: ii = ii - 1
+    Do While DT_VAL > T_VAL
+        jj = 2
+        For j = SCOLUMN + 1 To NCOLUMNS
+            TEMP_MATRIX(ii, jj) = TEMP_MATRIX(ii + 1, jj) - ((DATA_MATRIX(SROW + 2, j) - DATA_MATRIX(SROW + 1, j)) / (DATA_MATRIX(SROW + 2, SCOLUMN) - DATA_MATRIX(SROW + 1, SCOLUMN)))
+            jj = jj + 1
+        Next j
+        DT_VAL = DT_VAL - DELTA_VAL
+        ii = ii - 1
+    Loop
+'---------------------------------------------------------------------------------------
+Return
+'---------------------------------------------------------------------------------------
+CALC1_LINE:
+'---------------------------------------------------------------------------------------
+    Do While DT_VAL > DATA_MATRIX(i - 1, SCOLUMN) And DT_VAL < DATA_MATRIX(i, SCOLUMN)
+        TEMP_MATRIX(ii, 1) = DT_VAL
+        jj = 2
+        For j = SCOLUMN + 1 To NCOLUMNS
+            TEMP_MATRIX(ii, jj) = TEMP_MATRIX(ii - 1, jj) + ((DATA_MATRIX(i, j) - DATA_MATRIX(i - 1, j)) / (DATA_MATRIX(i, SCOLUMN) - DATA_MATRIX(i - 1, SCOLUMN)))
+            jj = jj + 1
+        Next j
+        ii = ii + 1
+        DT_VAL = DT_VAL + DELTA_VAL
+    Loop
+'---------------------------------------------------------------------------------------
+Return
+'---------------------------------------------------------------------------------------
+ERROR_LABEL:
+BOND_PORT_MARKET_YIELDS_FUNC = Err.number
+End Function

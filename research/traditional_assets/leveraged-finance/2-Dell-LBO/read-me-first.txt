@@ -1,0 +1,25 @@
+The attached document is an updated case study of the Dell’s LBO, purposed for learning about the economics of Michael Dell’s deal of the century, the events leading up to the transaction that are considered in the model, and the law suit launched by former shareholders, post transaction. It should be noted that for simplicity, many events have been omitted, especially those relating to the legal analysis used to arrive at the court’s ruling. For a complete outline of events and analysis used in the court ruling, please reference: Memorandum Opinion, In the Court of Chancery of the State of Delaware RE: Appraisal of Dell Inc., May 31, 2016.
+
+References: 
+
+Document: http://www.rnfc.org/courses/finance/modules/LBO%20model/documents/Dell%20Technical%20Note.pdf
+
+Spreadsheet: http://www.rnfc.org/courses/finance/modules/LBO%20model/documents/Dell%20LBO%20Model.xlsx
+
+Website: http://www.rnfc.org/courses/finance/modules/LBO%20model/
+
+Article: https://www.forbes.com/sites/antoinegara/2021/08/03/deal-of-the-century-how-michael-dell-turned-his-declining-pc-business-into-40-billion-windfall/
+
+IG Post: https://www.instagram.com/p/CpOQs3sLNtM/
+
+—
+
+Posted May 16th 2021 • @rafael_nicolas The American mathematician and statistician George Bernard Dantzig was the protagonist of one of the best stories in the annals of mathematics. In 1939 he was a graduate student at the University of California, Berkeley. Shortly after beginning a class, Prof. Jerzy Neyman (a renowned Polish mathematician and statistician himself) wrote on the blackboard two famously unsolved statistics problems. Dantzig arrived late, assumed the two problems were a homework assignment, and a few days after the class, he handed in the solutions for both problems. He considered the problems "to be a little harder than usual." A few weeks later, Dantzig was visited by Neyman that told him he had solved two of the most famous unsolved statistics problems. Apparently, the problems appear in the following two articles written by Dantzig (https://math.stackexchange.com/questions/533146/dantzigs-unsolved-homework-problems):
+
+1) "On the Non-Existence of Tests of 'Student's' Hypothesis Having Power Functions Independent of Sigma." Annals of Mathematical Statistics. No. 11; 1940 (pp. 186-192).
+2) "On the Fundamental Lemma of Neyman and Pearson." Annals of Mathematical Statistics. No. 22; 1951 (pp. 87-93) written together with Abraham Wald.
+
+What is even more fascinating is that George Dantzig created the simplex algorithm, which is the foundation of mathematical optimization. Few years ago I gave my students the following challenge: solve for the Dell’s mammoth $24bn Leveraged Buyout without Microsoft Excel (http://www.rnfc.org/courses/finance/modules/LBO%20model/). One student had the genius idea of coding his own capital structure solver using the concept of a simplex (https://github.com/rnfermincota/vba/blob/master/OPTIM_MULTVAR_SIMPLEX_LIBR.bas). 
+
+P.S. When we try something new, we inevitably attract people that doubt us. So not being deterred by them is one of the skills that we have to develop in order to make change happen. I work really hard at helping to maintain a culture of high standards, of operational excellence, of inventiveness, of willingness to adapt to change and take the time to educate.
+
