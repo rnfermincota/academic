@@ -428,7 +428,7 @@ SF_values <- jsonlite::fromJSON(
 ) %>% 
   as.data.frame() %>% select(o)
 
-SF_values <- unnest(SF_values$o)
+SF_values <- unnest(cols=SF_values$o)
 
 S2F_data <- cbind(SF_date, SF_values) %>%
   select(-daysTillHalving) %>% 
