@@ -1,25 +1,16 @@
-Attribute VB_Name = "FINAN_PORT_RISK_BACKTEST_LIBR"
-
-Option Explicit     'Requires that all variables to be declared explicitly.
-Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
-                    'default first index of arrays.
-
-
 '************************************************************************************
 '************************************************************************************
-'FUNCTION      : RNG_PORT_BACK_TESTING_FUNC
-'DESCRIPTION   : Portfolio Back Testing
+'FUNCTION      : DIEGO_PORT_BACK_TESTING_FUNC
+'DESCRIPTION   : Diego Portfolio Back Testing
 'LIBRARY       : PORTFOLIO
 'GROUP         : BACK_TESTING
 'ID            : 001
 'AUTHOR        : RAFAEL NICOLAS FERMIN COTA
-'LAST UPDATE   : 12/08/2008
-'REFERENCE:
-'http://www.bogleheads.org/forum/viewtopic.php?p=403843
+'LAST UPDATE   : 05/29/2024
 '************************************************************************************
 '************************************************************************************
 
-Function RNG_PORT_BACK_TESTING_FUNC(ByRef DST_RNG As Excel.Range, _
+Function DIEGO_PORT_BACK_TESTING_FUNC(ByRef DST_RNG As Excel.Range, _
 Optional ByVal NO_PERIODS As Long = 37, _
 Optional ByVal NO_ASSETS As Long = 28, _
 Optional ByVal NO_PORTFOLIOS As Long = 5)
@@ -45,7 +36,7 @@ Dim SRC_RNG As Excel.Range
 
 On Error GoTo ERROR_LABEL
 
-RNG_PORT_BACK_TESTING_FUNC = False
+DIEGO_PORT_BACK_TESTING_FUNC = False
 
 '-----------------------------------------------------------------------------------------
 'FIRST PASS: HISTORICAL RETURNS
@@ -862,7 +853,7 @@ End With
 
 '-----------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------
-RNG_PORT_BACK_TESTING_FUNC = True
+DIEGO_PORT_BACK_TESTING_FUNC = True
 
 
 Exit Function
@@ -943,5 +934,5 @@ Return
 '-----------------------------------------------------------------------------------------
 
 ERROR_LABEL:
-RNG_PORT_BACK_TESTING_FUNC = False
+DIEGO_PORT_BACK_TESTING_FUNC = False
 End Function
