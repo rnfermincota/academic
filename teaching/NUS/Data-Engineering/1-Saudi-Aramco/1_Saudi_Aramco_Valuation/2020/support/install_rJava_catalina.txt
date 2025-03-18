@@ -1,0 +1,39 @@
+MACOS CATALINA NIGHTMARE
+-------------------------------------------------------------------------------
+(1) Uninstall previous version of gfortran
+rm -rf /usr/local/gfortran
+-------------------------------------------------------------------------------
+
+(2) Install Homebrew & GCC
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+brew install gcc
+-------------------------------------------------------------------------------
+
+(3) Config RStudio
+
+Modify "/Library/Frameworks/R.framework/Resources/etc/Makeconf":
+
+Use Homebrew gcc for OpenMP support CC = gcc-10  Use Homebrew gcc for OpenMP support CXX = g++-10  Ask R to find the Homebrew copy of gcc FLIBS = -L/usr/local/lib/gcc/10/gcc/x86_64-apple-darwin19/10.2.0 -L/usr/local/lib/gcc/10 -lgfortran -lquadmath -lm
+
+
+-------------------------------------------------------------------------------
+(4) Install Java & rJava
+
+sudo rm -rf /Library/Java
+Goto https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
+Click jdk-11.0.8_osx-x64_bin.dmg and run it
+
+(5) Go to your Mac terminal and type:
+- sudo R CMD javareconf
+- export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home
+- export PATH=$JAVA_HOME/bin:$PATH
+- R --quiet -e 'install.packages("rJava", type="source", repos="http://cran.us.r-project.org")'
+
+-------------------------------------------------------------------------------
+(6) Goto RStudio
+
+- install.packages("stabulizer")
+- library(rJava)
+- library(tabulizer)
+- f <- system.file("examples", "data.pdf", package = "tabulizer")
+- extract_tables(f)

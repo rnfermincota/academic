@@ -1,0 +1,436 @@
+---
+title: "Extracting Data from the Saudi Arabia Capital Allocation Database"
+author: "Nico"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: true
+      smooth_scroll: true
+    number_sections: true
+    code_folding: show 
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  # echo = TRUE, 
+  collapse=TRUE,
+  comment="#",
+  message=FALSE,
+  warning=FALSE,
+  dev.args = list(pointsize = 11)
+)
+
+library(distill)
+library(rmarkdown)
+
+format.dt.f = function(
+  df, 
+  page_length = 10,
+  perc_vars=NA,
+  ron_vars=NA,
+  ron_digits=2
+){
+  if( is.null(df) | purrr::is_empty(df) ){return()}
+  
+  double.two.int.f = function( df ){
+    get_no_digits = function(x){
+      if( ! is.numeric(x) ){return(NULL)}
+      x = x %% 1
+      x = as.character(x)
+      no_digits = nchar(x) - 2
+      no_digits = ifelse( no_digits == -1, 0, no_digits )
+      return(no_digits)
+    } 
+    suppressWarnings({
+      new_df = df %>%
+        as_tibble() %>%
+        mutate_if( function(x) max( get_no_digits(x), na.rm = T ) == 0, as.integer )
+    })
+    return(new_df)
+  }
+  df = double.two.int.f( df )
+  max_length = nrow(df)
+  page_length_menu = c(10,25,50,100, max_length, page_length) %>% unique()
+  page_length_menu = page_length_menu[ !page_length_menu > max_length]
+  
+  dt = DT::datatable(
+    df, 
+    extensions = c('Buttons', 'ColReorder', 'KeyTable', 'FixedColumns'), 
+    rownames = FALSE, 
+    options = list(
+      dom = 'Bflrtip', 
+      buttons = I( c('colvis','copy', 'excel') ), 
+      colReorder = TRUE, 
+      keys = TRUE, 
+      pageLength = page_length, 
+      lengthMenu = page_length_menu,
+      scrollX = TRUE,
+      scrollCollapse = TRUE
+    )
+  )
+  
+  if (!is.na(ron_vars)[1]) dt=dt %>% DT::formatRound( ron_vars, ron_digits )
+  if (!is.na(perc_vars)[1]) dt=dt %>% DT::formatPercentage( perc_vars, 2 )
+  
+  return(dt)
+}
+```
+
+# Context
+
+In this lecture, we look at how we can use R to automate the process of <a href="https://rpubs.com/rafael_nicolas/saudi_arabia_capital_allocation" target="_blank">extracting relevant fundamental data from the Saudi Arabia capital allocation database</a>.
+
+# Initialization
+
+We begin by: 
+
+## Clearing all pre-existing objects from the workspace
+
+```{r, eval=FALSE}
+gc(); rm(list=ls()); graphics.off()
+```
+
+## Initializing the file paths
+
+```{r}
+path_root <- "." # Sets the current working directory as the relative file path
+path_output <- file.path(path_root, "output") 
+path_data <- file.path(path_root, "data") # ./data
+```
+
+Download the xlsx files here: <a href="https://github.com/rnfermincota/academic/tree/main/research/traditional_assets/database/data/saudi_arabia" target="_blank">https://github.com/rnfermincota/academic/tree/main/research/traditional_assets/database/data/saudi_arabia</a>
+
+## Loading the necessary libraries
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyxl)   # Imports non-tabular data from Excel files.
+library(tibble)   # Stricter checking and better formatting than the traditional dataframe.
+library(dplyr)    # A manipulation tool for working with data frame like objects.
+library(purrr)    # A Complete functional programming toolkit for R.
+library(furrr); plan(multisession) # Provides multicore parallel implementations of the purrr map() function. 
+library(unpivotr) # Tools for converting data from complex or irregular layouts to a columnar structure. https://nacnudus.github.io/unpivotr/
+```
+
+
+# The `extract.sheets.f` Function
+
+## What?
+
+A function for extracting all information contained in all sheets in a specified Excel file. 
+The `excl` parameter can contain a list of columns that should be excluded from being converted to _numeric_ type before the final dataframe is returned.
+
+
+```{r}
+extract.sheets.f <- function(dsheet, excl=NULL){
+  
+  out <- dsheet %>% 
+    select(row, col, data_type, character, numeric, logical) %>%      # 1
+    rectify %>%                                                       # 2
+    select(-c("row/col"))                                             # 3
+  
+  nm <- out %>% slice(1) %>% unlist(use.names=FALSE) # headings       # 4
+  out <- set_names(out, nm) %>% slice(2:n())                          # 5
+  
+  if (!is.null(excl)){                                                # 6
+    out <- out %>% mutate(across(-excl, as.numeric))
+    }
+  
+  return(out)                                                         # 7
+}
+```
+
+## How?
+
+  1. Filter: use the `select()` function to extract the relevant columns from the Excel sheet.
+  2. Format: use the `rectify()` function to display the cells as though in a spreadsheet. _See example:_ <a href="https://github.com/nacnudus/unpivotr/blob/main/R/rectify.R" target="_blank">https://github.com/nacnudus/unpivotr/blob/main/R/rectify.R</a>
+
+  3. Remove: use the `select()` function to remove the _row/col_ column.
+  4. Headings: Extract and save the first row (currently storing the column headers) as `nm` using the `slice()`function. The `unlist(use.names=FALSE)` function is used to extract the column names as an atomic vector for easier manipulation.
+  5. Set names: Set the column names of the `out` dataframe to our vector `nm` and at the same time, remove the first row that contains the initial column names.
+  6. IF: A conditional statement for excluding previously specified columns from being converted to `numeric`. The `across()` function allows us to transform several column at once, instead of doing it manually, one by one.
+  7. Return: Returns the final dataframe.
+
+
+# Extract File Names
+
+We use the `list.files()` function to extract the file names within our _"./data/xlsx"_ folder into a character vector.
+
+```{r}
+list_paths <- list.files(
+  path = file.path(path_data),
+  pattern = ".xlsx",
+  full.names = TRUE
+  )
+```
+
+We provide the following arguments:
+
+  1. `path`: Directs the function to look within the previously specified _"./data/xlsx"_ directory.
+  2. `pattern`: Tells the function to pick out all Excel files within the specified folder xlsx.
+  3. `full.names`: Prepends the specified directory path to the file names.
+  
+
+```{r}
+as.data.frame(list_paths) %>% 
+  format.dt.f(.)
+```
+
+
+# Sheet Extraction Prep
+
+## Create list of sheet names
+
+
+```{r}
+dat = enframe(list_paths, name = NULL, value = "path") %>%
+      mutate(sector=gsub(".xlsx", "", basename(path)))
+```
+
+First, we use the `enframe()` function to convert the `list_paths` character vector into a one column dataframe since `name` parameter is set to `NULL` (otherwise, an additional column of names is also created). The `value` parameter sets the name of the single column returned. 
+
+Next, the `mutate()` function is used to create a new column named `sector`. The `sector` column is created using the `gsub()` function, which uses a regular expression pattern to locate and _substitute_ the filename extension _.xlsx_ for an empty string. The `basename()` function is used to remove the prepended file path from each character string up to and including the last path separator.
+
+The table below shows a _before_ and _after_ effect of this function in its two columns respectively:
+
+```{r}
+dat %>% 
+  format.dt.f(.)
+```
+
+
+## Extract sheets and store in column
+
+```{r}
+dat = dat %>% 
+      mutate(dataset = future_map(path, xlsx_cells) %>%
+      set_names(sector))
+```
+
+Finally, we mutate the dataframe further by adding a new column called `dataset` which contains all data from all sheets contained  within the excel file specified in the corresponding `path` column. The `xlsx_cells()` function is used to import the data cell by cell in conjunction with the `future_map()` function which applies a particular function to each element of a vector in parallel. The extracted sheets are stored as `tibbles` in the `dataset` column.
+
+
+# Sheet Extraction
+
+## What?
+
+In this section, we combine the `extracts.sheets.f()` function with the `dat` dataframe to extract all relevant data from the _earnings_debt_ sheets into a single dataframe.
+
+## How?
+
+First, we define a vector of column names as the variable `excl` for use in the `extracts.sheets.f()` function.
+
+```{r}
+excl <- c("country", "company_name", "industry_group")
+```
+
+Next,
+
+```{r}
+saudi_arabia_industries <- 
+    future_map(dat$dataset, function(inp){  # 1
+               extract.sheets.f(dplyr::filter(inp, sheet=="earnings_debt"), all_of(excl)) %>%
+               slice(1)                     # 2
+    }) %>%
+    bind_rows(.) %>%                        # 3
+    arrange(industry_group) %>%             # 4
+    arrange(desc(roic_cost_capital))        # 5
+```
+
+1. Use the `future_map()` function to iterate over the `dat` dataframe, extracting all sheets named _earnings_debt_ stored in the `dataset` column (remember that this column stores `tibbles`). We use the `all_of()` function to make sure that every value in the `excl` vector is present.
+2. Use the `slice()` function to grab only the first row at this time.
+3. Since step (1) returns a list of `r nrow(saudi_arabia_industries)` elements, we use the `bind_rows(.)` function to bind the individual rows into a single dataframe which shows _earnings_debt_ data for all industries included in the _"./data/xlsx"_ folder.
+4. Next, arrange the data alphabetically by `industry group` in ascending order. 
+5. Finally, arrange the industries based on their `roic_cost_capital` in descending order.
+
+A sample of the `saudi_arabia_industries` dataframe can be viewed
+
+```{r}
+saudi_arabia_industries %>% 
+  format.dt.f(.)
+```
+
+In this next chunk of code, we perform the same steps as above except instead of only grabbing the first row from the `earnings_debt` sheet, we grabbed the remaining rows.
+
+```{r}
+saudi_arabia_earnings_debt <- 
+    future_map(dat$dataset, function(inp){
+               extract.sheets.f(dplyr::filter(inp, sheet=="earnings_debt"), all_of(excl)) %>%
+               slice(2:n())
+  }) %>%
+  bind_rows(.) %>%
+  arrange(industry_group) %>%
+  arrange(industry_group, desc(roic_cost_capital))
+```
+
+
+```{r}
+format.dt.f(saudi_arabia_earnings_debt)
+```
+
+
+# Dividend Yield Filter
+
+1. Starts by selecting only rows from the `saudi_arabia_earnings_debt` dataframe that have a `dividend_yield` greater than $0.05$.
+2. Groups the resulting filtered rows by `industry_group` and uses the `slice()` function to return only the first occurring result for each industry.
+
+```{r}
+saudi_arabia_earnings_debt %>%
+  dplyr::filter(dividend_yield>0.05) %>%
+  group_by(industry_group) %>%
+  slice(1) %>% 
+  format.dt.f(.)
+```
+
+
+# Capital Structure
+
+The code here is very similar to the __Sheet Extraction__ section, but instead we target the `cost_capital` sheets for extraction
+
+```{r}
+excl <- c("company_name", "exchange_ticker", "industry_group", "country",
+       "reported_debt_rating", "current_debt_rating", "optimal_debt_rating", 
+       "flag_bankruptcy", "flag_refinanced")
+
+saudi_arabia_cost_capital <- 
+  future_map(dat$dataset, function(inp){
+    if((inp$sheet %>% n_distinct) > 1){                                           # 1
+        extract.sheets.f(dplyr::filter(inp, sheet=="cost_capital"), all_of(excl)) %>%
+        mutate(
+          flag_bankruptcy=as.logical(flag_bankruptcy),
+          flag_refinanced=as.logical(flag_refinanced)
+        )
+    }
+  }) %>%
+  bind_rows(.) %>%
+  mutate(spread_optimal = current_debt_capital-optimal_debt_capital) %>%           # 2
+  arrange(industry_group, spread_optimal)
+```
+
+There are two notable exceptions:
+
+1. The sheet is only loaded `if` the corresponding tibble in the `dataset` column has more than one distinct sheet.
+2. An additional column `spread_optimal` is created by subtracting `optimal_debt_capital` from `current_debt_capital`.
+
+```{r}
+format.dt.f(saudi_arabia_cost_capital)
+```
+
+
+
+# Putting It All Together
+
+In this section, we combine the data from our `saudi_arabia_earnings_debt` and `saudi_arabia_cost_capital` dataframes into one final dataframe before filtering out any rows that either exceed or fall short of certain metrics.  
+
+```{r}
+saudi_arabia_screener <- saudi_arabia_earnings_debt %>%
+  select(                                                                              # 1
+      industry_group, company_name, dividend_yield, roe, 
+         cost_equity, roe_excess_return=roe_cost_equity, roic, 
+         cost_capital, roic_excess_return=roic_cost_capital) %>%
+  left_join(                                                                           # 2
+    saudi_arabia_cost_capital %>% 
+  select(company_name, current_debt_capital,                                            
+         optimal_debt_capital, spread_optimal)) %>%
+  select(company_name, dividend_yield, roic_excess_return, roic,                       # 3
+         cost_capital, roe_excess_return, roe, cost_equity, spread_optimal, 
+         current_debt_capital, optimal_debt_capital) %>%
+  dplyr::filter(dividend_yield > 0.01, roic_excess_return > 0.025, spread_optimal < 0) # 4
+```
+
+1. Use the `select()` function to grab, and simultaneously rename, the columns of interest in the `saudi_arabia_earnings_debt` dataframe
+2. Perform a `left_join()` with the `saudi_arabia_cost_capital` dataframe after selecting four columns of interest. Since no column to join the two dataframes as specified, the common column `company_name`  is used.
+3. Once again, use the `select()` function to keep only the columns of interest
+4. Use the `filter()` function to keep only the rows that pass ALL of the following conditions:
+    
+    * `dividend_yield` > 0.01
+    * `roic_excess_return` > 0.025
+    * `spread_optimal` < 0
+
+```{r}
+format.dt.f(saudi_arabia_screener)
+```
+
+# Using the `extract.sheets.f` to extract all sheets from an Excel file
+
+This function combines and utilizes many of the tools we have already seen. We take things further by however, by extracting ALL sheets from a given Excel file and grouping them together in a database like format.
+
+```{r}
+if (FALSE){
+  saudi_arabia_db <- 
+    future_map(dat$dataset,function(inp){
+      excl = c("country", "company_name", "industry_group")
+      out = list(earnings_debt=extract.sheets.f(
+                 dplyr::filter(inp, sheet=="earnings_debt"), all_of(excl)))       # 1
+      
+      if ( (inp$sheet %>% n_distinct) > 1){                                       
+        excl = c("company_name", "exchange_ticker", "industry_group", "country",
+               "reported_debt_rating", "current_debt_rating", "optimal_debt_rating", 
+               "flag_bankruptcy", "flag_refinanced")
+      
+        out = list_modify(                                                        
+          out,
+          cost_capital = extract.sheets.f(
+            dplyr::filter(inp, sheet == "cost_capital"), all_of(excl))  %>%      # 2
+            mutate(
+              flag_bankruptcy=as.logical(flag_bankruptcy),
+              flag_refinanced=as.logical(flag_refinanced)
+            )
+        )
+
+        nm = inp %>%                                                              # 3
+          select(sheet) %>%
+          distinct(.) %>%
+          dplyr::filter(!sheet %in% c("earnings_debt", "cost_capital")) %>%
+          pull
+
+        out = list_modify(                                                        # 4
+          out,
+          optimal_mix = map(
+            nm,
+            ~extract.sheets.f(dplyr::filter(inp, sheet == .x), NULL) %>%
+              mutate(across(c(where(is.character), -debt_rating), as.numeric))
+          ) %>% set_names(nm)
+        )
+      }
+      
+      out                                                                         # 5
+    }
+  )
+  listviewer::jsonedit(saudi_arabia_db)
+}
+```
+
+1. Just as we have done previously, extract the `earnings_debt` sheet from the `dataset` column. This time however, store the extracted sheet in a list named `out`.  
+2. Next, extract the `cost_capital` sheet, and append it to our master list of sheets `out`.
+3. Create a vector of distinct sheet names that are not `cost_capital` or `earnings_debt`. This step uses the `pull()` function to extract a list of the remaining sheets in the provided Excel file.
+4. Then, for every sheet name that was collected in the previous step, use the `extract.sheets()` function to extract the sheet corresponding to that name, storing it in the `optimal_mix` variable and appending all extracted sheets to our master list `out`.
+5. Finally, Return the completed `saudi_arabia_db`. 
+
+
+# Housekeeping
+
+We finish by saving our four dataframes as an RDA file. RDA files allow us to export and store our work in a format that is shareable and restorable in any future R session.
+
+```{r}
+save(saudi_arabia_industries, saudi_arabia_earnings_debt, saudi_arabia_cost_capital, 
+     saudi_arabia_screener, file=file.path(path_output, "saudi_arabia_fundamental_data.Rda"))
+```
+
+Finally, we remove all created objects and user-defined functions from the global environment.
+
+```{r}
+rm(dat)
+rm(saudi_arabia_industries, saudi_arabia_earnings_debt, saudi_arabia_cost_capital, saudi_arabia_screener)
+rm(path_root, path_data, path_output, list_paths)
+rm(excl, extract.sheets.f)
+```
+
+
+# References
+
+__Saudi Arabia: Capital Allocation via Cost of Capital__ <a href="https://rpubs.com/rafael_nicolas/saudi_arabia_capital_allocation" target="_blank">https://rpubs.com/rafael_nicolas/saudi_arabia_capital_allocation</a>

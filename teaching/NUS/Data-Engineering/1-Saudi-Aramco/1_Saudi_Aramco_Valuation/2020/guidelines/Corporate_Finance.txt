@@ -1,0 +1,28 @@
+
+(0) Present Value Primer
+http://pages.stern.nyu.edu/~adamodar/New_Home_Page/PVPrimer/pvprimer.htm
+http://pages.stern.nyu.edu/~adamodar/pdfiles/papers/pv.pdf
+
+(1) Trailing Twelve Months
+= Most Recent Quarter + Most Recent Year - 12 Months Before the Most Recent Quarter
+https://www.investopedia.com/terms/t/ttm.asp
+
+(2) Growth and Returns
+http://pages.stern.nyu.edu/~adamodar/New_Home_Page/invfables/pbvdeterminants.htm
+http://people.stern.nyu.edu/adamodar/pdfiles/papers/returnmeasures.pdf
+
+(3) Risk Freee
+http://people.stern.nyu.edu/adamodar/pdfiles/papers/riskfree.pdf
+
+(4) Accounting Class
+http://people.stern.nyu.edu/adamodar/New_Home_Page/webcastacctg.htm
+https://www.youtube.com/playlist?list=PLUkh9m2BorqmKaLrNBjKtFDhpdFdi8f7C
+
+(5) Book on Narrative and Numbers
+http://people.stern.nyu.edu/adamodar/New_Home_Page/narrative/yourstory.htm
+http://pages.stern.nyu.edu/~adamodar/New_Home_Page/NNPreface.html
+http://aswathdamodaran.blogspot.com/2017/01/narrative-and-numbers-how-number.html
+
+(6) Linkedin Posts
+https://www.linkedin.com/posts/rnfc_gsresearch-activity-6702256758372626432-HfbX
+https://rpubs.com/rafael_nicolas/sp500_valuation

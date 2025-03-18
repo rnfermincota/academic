@@ -1,0 +1,695 @@
+---
+title: "Tidying Saudi Aramco Valuation"
+author: "Rafael Nicolas Fermin Cota"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: TRUE
+    toc_depth: 4
+    toc_float: 
+      collapsed: TRUE
+      smooth_scroll: FALSE
+    number_sections: TRUE
+    code_folding: show 
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+# https://www.business-science.io/finance/2020/02/21/tidy-discounted-cash-flow.html
+# https://rpubs.com/rafael_nicolas/aramco
+rm(list = ls())
+graphics.off()
+
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(
+  collapse=TRUE,
+  comment="#",
+  message=FALSE,
+  warning=FALSE,
+  # cache=TRUE, 
+  # autodep = TRUE,
+  fig.align = "center"
+)
+
+```
+
+The [tidy data principles](https://www.jstatsoft.org/article/view/v059i10) are a cornerstone of financial data management and the data modeling workflow. The foundation for tidy data management is the [tidyverse](https://www.tidyverse.org), a collection of R packages: `purrr`, `dplyr`, `tidyr`, `tibble`, `ggplot2`, `readr`, that work in harmony, are built for scalability, and are well documented in [R for Data Science](https://r4ds.had.co.nz). Using this infrastructure and the core tidy concepts, we can apply the tidy data principles to the __Saudi Aramco Discounted	Cash Flow	Valuation__.
+
+# Data Sources
+
+Saudi Aramco has set a price range for its listing that implies the oil giant is worth between USD\$1.6 trillion and US\$1.7 trillion, making it potentially the world's biggest IPO. The numbers that are laid out in the [prospectus](https://www.saudiaramco.com/-/media/images/investors/saudi-aramco-prospectus-en.pdf) are impressive, painting a picture of the most profitable company in the world, with almost unassailable competitive advantages. In this post, I valued Saudi Aramco using the following R packages.
+
+* The `tabulizer` package provides a suite of tools for extracting data from _PDFs_. The vignette, [Introduction to tabulizer](https://cran.r-project.org/web/packages/tabulizer/vignettes/tabulizer.html) has a great overview of __tabulizer__’s features. We will use the `extract_tables()` function to pull out tables 42 (pg 131 - gearing), 43 (pg 132 - capital), 45 (pg 133 - income statement) and 52 (pg 144 - balance sheet) from the [Saudi Aramco prospectus](https://www.saudiaramco.com/-/media/images/investors/saudi-aramco-prospectus-en.pdf). This returns a list of data.frames.
+
+* The `fuzzyjoin` package is a variation on __dplyr__’s [join](https://dplyr.tidyverse.org/reference/join.html) operations that allows matching not just on values that match between columns, but on inexact matching. This allows the Aramco's financial accounts (e.g., gearing, capital, income statement, balance sheet) to be quickly matched with the tables it is reported on and without having to looking for the correct location in the prospectus, a behemoth weighing in at $658$ pages.
+
+* The World Bank makes available a large body of economic data from the [World Development Indicators](http://datatopics.worldbank.org/world-development-indicators/) through its web API. The [WDI package](https://cran.r-project.org/web/packages/WDI/index.html) for R makes it easy to search and download the [annual percentage growth rate of Gross Domestic Product (GDP)](https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG) for Saudi Arabia. 
+
+* `rvest` makes it easy to scrape daily treasury yield curve rates from the website of the [U.S. Deparment of the Treasury](https://www.treasury.gov/resource-center/data-chart-center/interest-rates/pages/textview.aspx?data=yield). Here, I use it with `magrittr` so that I can express complex operations as elegant pipelines composed of simple, easily understood pieces.
+
+* `tidyxl` imports non-tabular data from Excel files into R. It exposes cell content, position, formatting and comments in a tidy structure for further manipulation. I use `tidyxl` to capture Damodaran's spreadsheets (risk premium, credit spread, unlevered beta, marginal tax rate) in a tidy fashion allowing for seamless interaction between rows and columns.
+
+```{r}
+# Sys.setenv(JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-11.0.1.jdk/Contents/Home/")
+library(knitr)
+library(kableExtra)
+library(ggpage)
+library(magrittr)
+library(tabulizer) # devtools::install_git("https://github.com/ropensci/tabulizer.git")
+library(tidyverse)
+library(WDI)
+library(pdftools)
+```
+
+## Prospectus
+
+In this section, I extract financial data from the prospectus, using `tabulizer` and `fuzzyjoin`. It automates work that would have taken significant manual collection and manipulation.
+
+
+```{r}
+# Saudi Aramco Prospectus
+
+# f <- file.path("data", "saudi-aramco-prospectus-en.pdf")
+download.f <- function(url) {
+  data.folder = file.path(getwd(), 'data')  # setup temp folder
+  if (!dir.exists(data.folder)){dir.create(data.folder, F)}
+  filename = file.path(data.folder, basename(url))
+  if(!file.exists(filename))
+    tryCatch({ download.file(url, filename, mode='wb') }, 
+             error = function(ex) cat('', file=filename))
+  filename
+}
+
+extract.values.f <- function(pdf.file, page, names){
+  require(tabulizer)
+  require(fuzzyjoin) # regex_inner_join
+  
+  # https://www.saudiaramco.com/-/media/images/investors/saudi-aramco-prospectus-en.pdf
+  area = case_when( # tabulizer::locate_areas(f, pages = 222, widget = "shiny")
+    page == 220  ~ c(459.77, 69.76, 601, 427.98), # Table 42 (pg 131)
+    page == 221  ~ c(168.03, 69.76, 394.53, 404.59), # Table 43 (pg 132)
+    page == 222  ~ c(180.11, 68.38, 413.04, 412.05), # Table 45 (pg 133)
+    page == 233  ~ c(181.57, 70.99, 673.96, 448.91) # Table 52 (pg 144)
+  )
+  
+  extract_tables(
+    pdf.file, pages = page, area = list(area), 
+    guess = FALSE, output = "data.frame"
+  ) %>% 
+    purrr::pluck(1) %>%
+    map_dfc(~trimws(gsub("\\.|[[:punct:]]", "", .x))) %>%
+    set_names( c("Heading", paste0("X", if(page==233){1:4}else{0:4})) ) %>%
+    regex_inner_join(
+      data.frame(regex_name = names, stringsAsFactors = FALSE), 
+      by = c(Heading = "regex_name")
+    ) %>%
+    select(X4) %>% 
+    pull %>% 
+    as.numeric
+}
+
+prospectus.pdf <- 'https://www.saudiaramco.com/-/media/images/investors/saudi-aramco-prospectus-en.pdf' %>% 
+  download.f(.)
+```
+
+For working with function programming, we solve the issue for one element, wrap the code inside a function, and then simply map `extract.values.f` to a list of elements in different tables (42, 43, 45 and 52).
+
+### Reserves Life
+
+Saudi Aramco's average reserve life is $52$ years, against $17$ years at [ExxonMobil](https://corporate.exxonmobil.com/Investors/Annual-Report/Upstream/Resources-and-proved-reserves). Its crude reserves are about five times that of the combined oil reserves of the five major international oil companies, comprising ExxonMobil, Shell, Chevron, Total, and BP.
+
+```{r}
+# 4.6.1.2 - Long reserves life
+
+# lines_text <- raw_text %>% read_lines()
+# lines_text[lines_text %>% str_which("proved reserves life")] %>%
+inputs <- prospectus.pdf %>% 
+  pdf_text() %>% read_lines() %>% 
+  grep("proved reserves life", ., value = TRUE) %>% 
+  str_match_all("[0-9]+") %>% 
+  purrr::pluck(1) %>% 
+  unlist %>% first() %>% as.numeric() %>% 
+  set_names(c("LONG_RESERVES_LIFE")) %>% as.list
+
+listviewer::jsonedit(inputs)
+```
+
+### Gearing
+
+Gearing is a measure of the degree to which Saudi Aramco’s operations are financed by debt. It is widely used by analysts and investors in the oil and gas industry to indicate a company’s financial health and flexibility.
+
+```{r}
+# Table 42 - Gearing and reconciliation
+inputs <- extract.values.f(prospectus.pdf, 220, 
+  c("Total borrowings", "Cash and cash equivalents", "Total equity")
+) %>% 
+  set_names(c("TOTAL_BORROWINGS", "CASH_AND_CASH_EQUIVALENTS", "TOTAL_EQUITY")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+### Capital
+
+Saudi Aramco has a comprehensive and disciplined internal approval process for capital allocation. Average capital employed is the average of Saudi Aramco’s total borrowings plus total equity at the beginning and end of the applicable period.
+
+```{r}
+# Table 43 - Return on Average Capital Employed (ROACE) and reconciliation
+inputs <- extract.values.f(prospectus.pdf, 221, 
+  c("Capital employed")
+) %>% 
+  last() %>% 
+  set_names(c("CAPITAL_EMPLOYED")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+### Income Statement
+
+The numbers in the financial statement are impressive, painting a picture of the most profitable company in the world, with almost unassailable competitive advantages.
+
+```{r}
+# Table 45 - Income statement
+inputs <- extract.values.f(prospectus.pdf, 222, 
+  c("Operating income", "Income taxes", "Income before income taxes", "Net income")
+) %>% 
+  set_names(c("OPERATING_INCOME", "INCOME_BEFORE_INCOME_TAXES", "INCOME_TAXES", "NET_INCOME")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+### Balance Sheet 
+
+Saudi Aramco’s unique reserves and resources base, operational flexibility, field management, and strong cash flow generation serve as a foundation for its low gearing and flexible balance sheet.
+
+```{r}
+# Table 52 - Balance sheet
+inputs <- extract.values.f(prospectus.pdf, 233, 
+  c("Shareholders equity", "Investment in joint ventures and associates", 
+    "Investment in securities", "Noncontrolling interests")) %>% 
+  purrr::discard(is.na) %>% 
+  set_names(c("INVESTMENT_JOINT_VENTURES_ASSOCIATES", "INVESTMENT_SECURITIES", 
+              "SHAREHOLDERS_EQUITY", "NON_CONTROLLING_INTERESTS")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+## World Bank GDP
+
+For Saudi Aramco, the growth rate in earnings corresponds closely to the growth in Saudi Arabia's GDP. The reason is simple. Saudi Arabia derives almost $80\%$ of its GDP from oil. 
+
+```{r}
+# World Development Indicators (WDI)
+if (F){
+  gdp_growth <- WDI::WDI(
+    country=c("SAU"), 
+    indicator="NY.GDP.MKTP.KD.ZG", # = GDP growth (annual %)
+    start=2018, 
+    end=2018
+  )$NY.GDP.MKTP.KD.ZG[[1]] # 2.214969
+  #save(gdp_growth, file="data/gdp_growth.rda")
+}
+load(file="data/gdp_growth.rda")
+
+inputs <- gdp_growth %>%
+  set_names(c("GDP_GROWTH")) %>% #  (annual %)
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+## U.S.Treasuries
+
+We use the $10$ year U.S. treasury rate because the currency choice for the Saudi Aramco discounted cash flow valuation is U.S. dollars.
+
+```{r}
+if (F){
+  treasury.rates.f <- function(year=2019){
+    require(dplyr)
+    require(quantmod)
+      # year=calendar year to pull results for
+      
+    getSymbols.FRED("DGS10", env = environment())
+    rates_raw <- na.locf(DGS10)
+    
+    rates_raw <- rates_raw[paste0(year, "/")] %>%
+      timetk::tk_tbl(rename_index="date") %>%
+      rename(trates=DGS10)
+  
+    # Returns treasury rates for the given duration
+    rates <- rates_raw %>%
+      # clean_names(.) %>%
+      mutate(
+        date = as.Date(date, "%m/%d/%y"),
+        month = factor(months(date), levels=month.name)
+      ) %>%
+      mutate_at(
+        vars(-one_of("date", "month")),
+        as.numeric
+      )
+    
+    summary <- rates %>%
+      select(-date) %>%
+      group_by(month) %>%
+      summarise_all(list(mean))
+    
+    return(summary)
+  }
+  treasury_rates <- treasury.rates.f(2019) # 1.792
+  save(treasury_rates, file="data/treasury_rates.rda")
+}
+
+load(file="data/treasury_rates.rda")
+
+inputs <- treasury_rates %>% 
+  set_names(c("TREASURY_YIELD_10YR")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+## Damodaran Online
+
+### Risk Premium
+
+Damodaran's equity risk premium is calculated by adding the mature market premium estimated for the US to the country-specific risk premium. To arrive at Saudi Arabia's equity risk premium, Damodaran augmented the default spread by a scaling factor to reflect the higher risk of equity.
+
+```{r}
+risk.premium.f <- function(){
+  require(tidyxl) # It does not support the binary file formats '.xlsb' or '.xls'.
+  
+  # data_file <- file.path("data", "ctrypremJuly19.xlsx")
+  url <- 'http://pages.stern.nyu.edu/~adamodar/pc/datasets/ctrypremJuly19.xlsx'
+  data_file <- download.f(url)
+  tidy_table <- xlsx_cells(data_file, sheets = "ERPs by country") %>% 
+    filter(!is_blank, row >= 7 & row <=162) %>%
+    select(row, col, data_type, character, numeric)
+  # equity risk premium with a country risk premium for Saudi Arabia added to 
+  # the mature market premium estimated for the US. 
+  i <- tidy_table %>% filter(character=="Saudi Arabia") %>% pull(row)
+  j <- tidy_table %>% filter(character=="Total Equity Risk Premium") %>% pull(col)
+  v = tidy_table %>% filter(row == i & col == j) %>% pull(numeric)
+  return(v * 100)
+}
+
+erp <- risk.premium.f()
+inputs <- erp %>%
+  set_names(c("EQUITY_RISK_PREMIUM")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+### Credit Spread
+
+We use a credit spread that lenders would charge a large integrated oil & gas company with a specific credit rating, and add it to the avg. 10 year U.S. treasury rate to arrive at Saudi Aramco's cost of debt. 
+
+```{r}
+rating.spread.f <- function(){
+  require(readxl)
+  # data_file <- file.path("data", "ratings.xls")
+  # Ratings, Interest Coverage Ratios and Default Spread
+  url <- 'http://www.stern.nyu.edu/~adamodar/pc/ratings.xls'
+  data_file <- download.f(url)
+  v <- read_excel(
+    data_file, sheet = "Start here Ratings sheet", 
+    range = "A18:D33") %>% # A18:D33 -> rating table for large manufacturing firms
+    janitor::clean_names() %>%
+    filter(rating_is=="A1/A+") %>%
+    # https://www.bloomberg.com/news/articles/2019-04-01/saudi-oil-giant-aramco-starts-bond-roadshow-gets-a-rating
+    pull(spread_is)
+  return(v * 100)
+}
+
+cs <- rating.spread.f()
+inputs <- cs %>%
+  set_names(c("CREDIT_SPREAD")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+
+### Unlevered Beta
+
+In calculating the cost of equity, we use an unlevered beta for Saudi Aramco based on integrated oil companies for both cash flow models: (1) cash flows after	reinvestment needs and taxes, but before debt payments (FCFF); and (2) cash	flows	after	taxes, reinvestments,	and	debt payments (FCFE).
+  
+```{r}
+# Effective Tax rate, Unlevered beta
+unlevered.beta.f <- function(){
+  require(readxl)
+  # data_file <- file.path("data", "betaGlobal.xls")
+  # Unlevered Betas (Global)
+  url <- 'http://www.stern.nyu.edu/~adamodar/pc/datasets/betaGlobal.xls'
+  data_file <- download.f(url)
+  # A10:F106 -> Industry Name, Number of firms, Beta, D/E Ratio, 
+  v <- read_excel(data_file, sheet = "Industry Averages", range = "A10:F106") %>%
+    janitor::clean_names() %>%
+    filter(industry_name=="Oil/Gas (Integrated)") %>%
+    pull(unlevered_beta)
+  return(v)
+}
+
+ub <- unlevered.beta.f()
+inputs <- ub %>%
+  set_names(c("UNLEVERED_BETA")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+
+### Marginal Tax
+
+The marginal tax rate is the number we use to compute Saudi Aramco's after-tax cost of debt. Given Saudi Aramco's marginal corporate tax rate, the after-tax cost of debt equates to the treasury rate plus the credit spread that lenders would charge Saudi Aramco multiplied by one minus the marginal tax rate.
+
+```{r}
+marginal.tax.f <- function(){
+  require(readxl)
+  # data_file <- file.path("data", "countrytaxrates.xls")
+  url <- 'http://www.stern.nyu.edu/~adamodar/pc/datasets/countrytaxrates.xls'
+  data_file <- download.f(url)
+  # Corporate Marginal Tax Rates - By country
+  v <- read_excel(data_file, sheet = "Sheet1") %>%
+    janitor::clean_names() %>%
+    filter(country=="Saudi Arabia") %>%
+    pull(x2018)
+  return(v * 100)
+}
+
+mtr <- marginal.tax.f()
+inputs <- mtr %>%
+  set_names(c("MARGINAL_TAX_RATE")) %>%
+  as.list %>% append(inputs)
+
+listviewer::jsonedit(inputs)
+```
+
+# DCF	Valuation
+
+* Calculate the discount rate or rates to	use	in	the	valuation for Saudi Aramco.
+  - cost of equity for equity investors (FCFE)
+  - cost of capital for all	claimholders (FCFF)
+  
+* Calculate the current earnings	and	cash flows of Saudi Aramco for equity	investors	and for all	claimholders.
+
+* Calculate the future	earnings and cash	flows	of Saudi Aramco	by estimating	an expected	growth rate in earnings (GDP growth).
+
+* Calculate Saudi Aramco's Discounted Cash Flow valuations.
+
+
+```{r valuation}
+equity.valuation.f <- function(inp){
+  
+  for (j in 1:length(inp)) assign(names(inp)[j], inp[[j]])
+  #-------------------------------------------------------------------------------------
+  # Calculated inputs
+  
+  EFFECTIVE_TAX_RATE <- INCOME_TAXES / INCOME_BEFORE_INCOME_TAXES
+  INVESTED_CAPITAL <- CAPITAL_EMPLOYED - CASH_AND_CASH_EQUIVALENTS
+  DEBT_RATIO <- TOTAL_BORROWINGS / ( TOTAL_BORROWINGS + TOTAL_EQUITY )
+
+  COST_DEBT <- ( CREDIT_SPREAD + TREASURY_YIELD_10YR ) / 100
+  COST_EQUITY <- ( TREASURY_YIELD_10YR + UNLEVERED_BETA * EQUITY_RISK_PREMIUM ) / 100
+  COST_CAPITAL <- COST_DEBT * ( 1 - ( MARGINAL_TAX_RATE / 100 ) ) * DEBT_RATIO + 
+    COST_EQUITY * ( 1 - DEBT_RATIO )
+  
+  NUMBER_YEARS <- LONG_RESERVES_LIFE
+
+  #-------------------------------------------------------------------------------------
+  # Free Cash Flow to Equity (FCFE)
+  
+  EXPECTED_RETURN_EQUITY <- NET_INCOME / SHAREHOLDERS_EQUITY
+  EXPECTED_GROWTH_EARNINGS <- GDP_GROWTH / 100
+  PAYOUT_RATIO <- 1 - EXPECTED_GROWTH_EARNINGS / EXPECTED_RETURN_EQUITY
+  
+  VALUE_EQUITY <- NET_INCOME * PAYOUT_RATIO * 
+    ( 1 - ( ( 1 + EXPECTED_GROWTH_EARNINGS ) ^ NUMBER_YEARS / 
+              ( 1 + COST_EQUITY ) ^ NUMBER_YEARS ) ) / 
+    ( COST_EQUITY - EXPECTED_GROWTH_EARNINGS )
+  
+  FCFE_EQUITY_VALUATION <- VALUE_EQUITY + CASH_AND_CASH_EQUIVALENTS + 
+    INVESTMENT_JOINT_VENTURES_ASSOCIATES + INVESTMENT_SECURITIES
+  
+  #-------------------------------------------------------------------------------------
+  # Free Cash Flow to Firm (FCFF)
+  EXPECTED_GROWTH_RATE <- GDP_GROWTH / 100
+  EXPECTED_ROIC <- OPERATING_INCOME * ( 1 - EFFECTIVE_TAX_RATE ) / INVESTED_CAPITAL
+  REINVESTMENT_RATE <- EXPECTED_GROWTH_RATE / EXPECTED_ROIC
+  
+  EXPECTED_OPERATING_INCOME_AFTER_TAX <- OPERATING_INCOME * 
+    ( 1 - EFFECTIVE_TAX_RATE ) * ( 1 + EXPECTED_GROWTH_RATE )
+  
+  EXPECTED_FCFF <- EXPECTED_OPERATING_INCOME_AFTER_TAX * ( 1 - REINVESTMENT_RATE )
+  
+  VALUE_OPERATING_ASSETS <- EXPECTED_FCFF * 
+    ( 1 - ( ( 1 + EXPECTED_GROWTH_RATE ) ^ NUMBER_YEARS / 
+              ( 1 + COST_CAPITAL ) ^ NUMBER_YEARS ) ) / 
+    ( COST_CAPITAL - EXPECTED_GROWTH_RATE )
+  
+  FCFF_EQUITY_VALUATION <- VALUE_OPERATING_ASSETS + CASH_AND_CASH_EQUIVALENTS + 
+    INVESTMENT_JOINT_VENTURES_ASSOCIATES + INVESTMENT_SECURITIES - 
+    TOTAL_BORROWINGS - NON_CONTROLLING_INTERESTS
+
+  #-------------------------------------------------------------------------------------
+  # Use set_names to name the elements of the vector
+  out <- c(INVESTED_CAPITAL, DEBT_RATIO, EFFECTIVE_TAX_RATE) %>% 
+    set_names(c("INVESTED_CAPITAL", "DEBT_RATIO", "EFFECTIVE_TAX_RATE"))
+  
+  out <- c(NUMBER_YEARS, COST_CAPITAL, COST_EQUITY, COST_DEBT) %>% 
+    set_names(c("NUMBER_YEARS", "COST_CAPITAL", "COST_EQUITY", "COST_DEBT")) %>%
+    as.list %>% append(out)
+
+  out <- c(FCFE_EQUITY_VALUATION, VALUE_EQUITY, PAYOUT_RATIO, 
+           EXPECTED_GROWTH_EARNINGS, EXPECTED_RETURN_EQUITY) %>% 
+    set_names(c("FCFE_EQUITY_VALUATION", "VALUE_EQUITY", "PAYOUT_RATIO", 
+                "EXPECTED_GROWTH_EARNINGS", "EXPECTED_RETURN_EQUITY")) %>%
+    as.list %>% append(out)
+  
+  out <- c(FCFF_EQUITY_VALUATION, VALUE_OPERATING_ASSETS, EXPECTED_FCFF, 
+           EXPECTED_OPERATING_INCOME_AFTER_TAX, REINVESTMENT_RATE, 
+           EXPECTED_ROIC, EXPECTED_GROWTH_RATE) %>% 
+    set_names(c("FCFF_EQUITY_VALUATION", "VALUE_OPERATING_ASSETS", "EXPECTED_FCFF", 
+                "EXPECTED_OPERATING_INCOME_AFTER_TAX", "REINVESTMENT_RATE", 
+                "EXPECTED_ROIC", "EXPECTED_GROWTH_RATE")) %>%
+    as.list %>% append(out)
+  #-------------------------------------------------------------------------------------
+
+  return(out)
+}
+
+output <- equity.valuation.f(inputs)
+
+listviewer::jsonedit(output)
+```
+
+
+
+```{r, echo=FALSE, eval=FALSE}
+## Inputs
+inputs %>% 
+  flatten() %>% as_tibble %>%
+  mutate_at(
+    vars(one_of("TOTAL_BORROWINGS", "CASH_AND_CASH_EQUIVALENTS", "TOTAL_EQUITY", 
+                "CAPITAL_EMPLOYED", "OPERATING_INCOME", "INCOME_BEFORE_INCOME_TAXES", 
+                "INCOME_TAXES", "NET_INCOME", "INVESTMENT_JOINT_VENTURES_ASSOCIATES",
+                "INVESTMENT_SECURITIES", "SHAREHOLDERS_EQUITY", "NON_CONTROLLING_INTERESTS")),
+    scales::dollar
+  ) %>%
+  mutate_at(
+    vars(one_of("GDP_GROWTH", "TREASURY_YIELD_10YR", "EQUITY_RISK_PREMIUM", 
+                "CREDIT_SPREAD", "MARGINAL_TAX_RATE")),
+    pryr::partial(sprintf, fmt = "%.2f%%")
+  ) %>%
+  mutate_at(
+    vars(UNLEVERED_BETA),
+    pryr::partial(sprintf, fmt = '%#.3f')
+  ) %>%
+  mutate_at(
+    vars(LONG_RESERVES_LIFE),
+    pryr::partial(sprintf, fmt = '%#.0f')
+  ) %>%
+  gather(key = "account", value = "value") %>%
+  kable() %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+## Methods
+output %>% 
+  flatten() %>% as_tibble %>%
+  mutate_at(
+    vars(one_of("INVESTED_CAPITAL", "VALUE_EQUITY", "FCFE_EQUITY_VALUATION", 
+                "EXPECTED_OPERATING_INCOME_AFTER_TAX", "EXPECTED_FCFF", 
+                "VALUE_OPERATING_ASSETS", "FCFF_EQUITY_VALUATION")),
+    scales::dollar
+  ) %>%
+  mutate_at(
+    vars(one_of("EFFECTIVE_TAX_RATE", "DEBT_RATIO", "COST_DEBT", "COST_EQUITY", 
+                "COST_CAPITAL", "EXPECTED_RETURN_EQUITY", "EXPECTED_GROWTH_EARNINGS", 
+                "PAYOUT_RATIO", "EXPECTED_GROWTH_RATE", "EXPECTED_ROIC", 
+                "REINVESTMENT_RATE")),
+    function(v) sprintf(v*100, fmt = "%.2f%%")
+  ) %>%
+  mutate_at(
+    vars(NUMBER_YEARS),
+    pryr::partial(sprintf, fmt = '%#.0f')
+  ) %>%
+  gather(key = "account", value = "value") %>%
+  kable() %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+## Summary
+
+Below, I valued Saudi Aramco using a weighted DCF equity valuation: $50\%$ for Operating income &	FCFF and $50\%$ for Equity income & FCFE.
+
+```{r, dependson='valuation'}
+data.frame(
+  Weighted = 0.5 * (output$FCFF_EQUITY_VALUATION + output$FCFE_EQUITY_VALUATION) / 1000000,
+  FCFF = output$FCFF_EQUITY_VALUATION / 1000000,
+  FCFE = output$FCFE_EQUITY_VALUATION / 1000000,
+  check.names = FALSE
+) %>%
+  mutate_all(scales::dollar) %>% 
+  kable() %>%
+  kable_styling(c("striped", "bordered")) %>%
+  add_header_above(c("Saudi Aramco Equity Valuation ($ trillions)" = 3))
+```
+
+
+## Sensitivity
+
+It is very likely that investors will reward Saudi Aramco for:
+
+- Ultralong reserve life 
+- Lower gearing than each of the five major international oil companies
+- Ability to execute some of the world’s largest upstream and downstream capital projects
+- Higher operating cash flow, free cash flow, EBIT, EBITDA, and Return on Average Capital Employed (ROACE) than each of the five major international oil companies
+
+However, investors could also penalize Saudi Aramco for the geopolitical risk and the central banking conspiracy to keep interest rates low.
+
+
+### Risk Premium
+
+Given the risk of attacks against Saudi Aramco' oil and gas infrastructure, there is a chance that the equity risk premium and the cost of capital could go up. However, if we remove that geopolitical risk from consideration and look at the remaining risk, Aramco is a remarkably safe investment, with the mind-boggling profits and cash flows and access to huge oil reserves consisting of $201.4$ billion barrels of crude oil and condensate, $25.4$ billion barrels of NGLs, and $185.7$ trillion standard cubic feet of natural gas.
+
+```{r}
+# Equity Risk Premium
+out <- map(
+  seq(6, 10, 0.25), 
+  ~list_modify(
+    inputs, 
+    EQUITY_RISK_PREMIUM=.x
+  ) %>% 
+    equity.valuation.f(.) 
+)
+
+map2_dfr(
+  out, 
+  seq(6, 10, 0.25),
+  ~list(
+    EQUITY_RISK_PREMIUM=.y, 
+    COST_CAPITAL=.x$COST_CAPITAL*100,
+    WEIGHTED=(.x$FCFF_EQUITY_VALUATION+.x$FCFE_EQUITY_VALUATION) / 2 / 1000000,
+    FCFF=.x$FCFF_EQUITY_VALUATION / 1000000, 
+    FCFE=.x$FCFE_EQUITY_VALUATION / 1000000
+  )
+) %>%
+  # arrange(-EQUITY_RISK_PREMIUM) %>%
+  mutate_at(
+    vars(one_of("FCFF", "FCFE", "WEIGHTED")),
+    scales::dollar
+  ) %>% 
+    mutate_at(
+    vars(one_of("EQUITY_RISK_PREMIUM", "COST_CAPITAL")),
+    function(v) sprintf(v, fmt = "%.2f%%")
+  ) %>%
+  rmarkdown::paged_table()
+```
+
+### Treasury Yield
+
+Central banks around the world have conspired to keep interest rates low and artificially push up the price of financial assets. The end game in this story is that the central banks will eventually be forced to face reality, where the U.S. $10$ Year Treasury will rise to normal levels and the value of Saudi Aramco could decrease. 
+
+```{r}
+out <- map(
+  seq(1, 4, 0.25), 
+  ~list_modify(
+    inputs, 
+    TREASURY_YIELD_10YR=.x
+  ) %>% 
+    equity.valuation.f(.)
+)
+
+map2_dfr(
+  out, 
+  seq(1, 4, 0.25),
+  ~list(
+    TREASURY_YIELD_10YR=.y, 
+    WEIGHTED=(.x$FCFF_EQUITY_VALUATION+.x$FCFE_EQUITY_VALUATION) / 2 / 1000000,
+    FCFF=.x$FCFF_EQUITY_VALUATION / 1000000, 
+    FCFE=.x$FCFE_EQUITY_VALUATION / 1000000
+  )
+) %>%
+  # arrange(-TREASURY_YIELD_10YR) %>%
+  mutate_at(
+    vars(one_of("FCFF", "FCFE", "WEIGHTED")),
+    scales::dollar
+  ) %>% 
+    mutate_at(
+    vars(one_of("TREASURY_YIELD_10YR")),
+    function(v) sprintf(v, fmt = "%.2f%%")
+  ) %>%
+  rmarkdown::paged_table()
+```
+
+### Reserves Life
+
+Saudi Aramco’s oil equivalent reserves were sufficient for proved reserves life of $52$ years, which was significantly longer than the $9$ to $17$ year proved reserves life of any of the five major international oil companies based on publicly available information.
+
+```{r}
+out <- map(
+  40:52, # Long reserves life
+  ~list_modify(
+    inputs, 
+    LONG_RESERVES_LIFE=.x
+  ) %>% 
+    equity.valuation.f(.)
+)
+
+map_dfr(
+  out, 
+  ~list(
+    RESERVES_LIFE=.x$NUMBER_YEARS, 
+    WEIGHTED=(.x$FCFF_EQUITY_VALUATION+.x$FCFE_EQUITY_VALUATION) / 2 / 1000000,
+    FCFF=.x$FCFF_EQUITY_VALUATION / 1000000, 
+    FCFE=.x$FCFE_EQUITY_VALUATION / 1000000
+  )
+) %>% 
+  arrange(-RESERVES_LIFE) %>%
+  mutate_at(
+    vars(one_of("FCFF", "FCFE", "WEIGHTED")),
+    scales::dollar
+  ) %>% 
+  rmarkdown::paged_table()
+```
+
+
+```{r, echo=FALSE}
+rm(prospectus.pdf)
+rm(rates, erp, cs, ub, mtr)
+rm(download.f, extract.values.f, treasury.rates.f, risk.premium.f, 
+   rating.spread.f, unlevered.beta.f, marginal.tax.f,
+   equity.valuation.f)
+rm(inputs, output)
+rm(out)
+```
+
+The report was produced using `RStudio/knittr`  
+**on `r format(Sys.time(), "%F at %H:%M:%S (%Z, GMT%z)")`**
