@@ -1,0 +1,352 @@
+---
+title: 'F1 Ergast DB with SQLite and dplyr'
+author: "Nico"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: show
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+
+rm(list = ls())
+graphics.off()
+
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(
+  collapse=TRUE,
+  comment="",
+  message=FALSE,
+  warning=FALSE,
+  cache=FALSE,
+  fig.align = "center"
+)
+
+library(RSQLite) # install.packages("RSQLite")
+library(purrr)
+library(DBI)
+library(tidyr)
+library(dplyr)
+library(rlang)
+library(dm) # devtools::install_github("krlmlr/dm")
+
+path_root="."
+
+format.dt.f = function(
+  df, 
+  page_length = 10,
+  perc_vars=NA,
+  ron_vars=NA,
+  ron_digits=2
+){
+  if( is.null(df) | purrr::is_empty(df) ){return()}
+  
+  double.two.int.f = function( df ){
+    get_no_digits = function(x){
+      if( ! is.numeric(x) ){return(NULL)}
+      x = x %% 1
+      x = as.character(x)
+      no_digits = nchar(x) - 2
+      no_digits = ifelse( no_digits == -1, 0, no_digits )
+      return(no_digits)
+    } 
+    suppressWarnings({
+      new_df = df %>%
+        as_tibble() %>%
+        mutate_if( function(x) max( get_no_digits(x), na.rm = T ) == 0, as.integer )
+    })
+    return(new_df)
+  }
+  df = double.two.int.f( df )
+  max_length = nrow(df)
+  page_length_menu = c(10,25,50,100, max_length, page_length) %>% unique()
+  page_length_menu = page_length_menu[ !page_length_menu > max_length]
+  
+  dt = DT::datatable(
+    df, 
+    extensions = c('Buttons', 'ColReorder', 'KeyTable', 'FixedColumns'), 
+    rownames = FALSE, 
+    options = list(
+      dom = 'Bflrtip', 
+      buttons = I( c('colvis','copy', 'excel') ), 
+      colReorder = TRUE, 
+      keys = TRUE, 
+      pageLength = page_length, 
+      lengthMenu = page_length_menu,
+      scrollX = TRUE,
+      scrollCollapse = TRUE
+    )
+  )
+  
+  if (!is.na(ron_vars)[1]) dt=dt %>% DT::formatRound( ron_vars, ron_digits )
+  if (!is.na(perc_vars)[1]) dt=dt %>% DT::formatPercentage( perc_vars, 2 )
+  
+  return(dt)
+}
+
+
+#----------------------------------------------------------------------------------------------------------
+# install.packages("DiagrammeR")
+# library(magrittr)
+library(dplyr)
+#----------------------------------------------------------------------------------------------------------
+path_root="."
+path_libs=file.path(path_root, "libs")
+# library(f1db) # devtools::install_git("https://github.com/NilsDM/f1db.git")
+#-------------------------------------------------------------------
+f1db <- new.env() #rlang::new_environment() # 
+list.files(path = path_libs, pattern = "*.R") %>% 
+  file.path(path_libs, .) %>% 
+  # purrr::map(pryr::partial(source, local=f1db), encoding = 'UTF8') %>% 
+  purrr::map(source, local=f1db, encoding = 'UTF8') %>% 
+  invisible()
+
+nm <- ls(env=f1db)
+# fl <- purrr::map(nm, pryr::partial(get, envir=f1db)) %>% 
+fl <- purrr::map(nm, get, envir=f1db) %>% setNames(nm)
+fl %>% attach()
+
+# file.remove(file.path(path_root, "f1db-main.zip"))
+# file.remove(file.path(path_root, "f1_db.SQLite"))
+# unlink(file.path(path_root, "f1db_csv"), recursive = TRUE) 
+#----------------------------------------------------------------------------------------------------------
+
+# Download configure and connect Ergast files to SQLite database
+con <- createF1db()[[1]] # create database dumb
+```
+
+
+# Introduction
+
+In this lecture, I cover how to create a SQLite database image version of the <a href="http://ergast.com/mrd/" target="_blank">Ergast Developer API</a> containing historical Formula 1 racing data. 
+
+SQL queries are sent to this file from *R*/*RStudio* using the *DBI* and *RSQLite* packages and several F1 race records and category-leaders for:
+
+* lap times
+* driver records and
+* constructor records 
+
+were derived from the tables in the SQLite database. RSQLite is a SQL engine with superb R integration. It exhibits reasonably fast joins and aggregations, typically among the most important features of a database system. It is simple to use, loads data robustly, and runs very fast on larger-than-RAM data.
+
+Finally, I discuss how to use the <a href="https://cran.r-project.org/web/packages/dplyr/vignettes/dplyr.html" target="_blank">dplyr</a> package to interface with databases and to make window functions available to SQLite files. Two race records were produced using dplyr syntax and window functions that would have been difficult to accomplish using pure SQL.
+
+<!--
+I also share the full code and raw data that I used.
+-->
+
+# Ergast Developer API
+
+For fans of Formula 1 racing, the <a href="http://ergast.com/mrd/" target="_blank">Ergast Developer API</a> is an invaluable source of historical race data, race results, and constructor and driver standings for every season since 1950. This data is openly licensed and made readily available through a variety of interfaces, including an API, a webpage that can be queried from a <a href="http://ergast.com/mrd/query/" target="_blank">manual interface</a>, and a downloadable <a href="http://ergast.com/mrd/db/" target="_blank">database image</a>. 
+
+This data can provide answers to countless questions about **Formula 1** and can perhaps even be used to reveal stories that went unnoticed or unappreciated in F1 history.
+
+<span style="color:black">**The intention is to write a few SQL queries using <a href="https://SQLite.org/" target="_blank">SQLite</a> and <a href="https://dplyr.tidyverse.org/index.html" target="_blank">dplyr</a> that return interesting records and other superlatives in F1 racing history**</span>.
+
+<center><a href="http://ergast.com/mrd" target="_blank">Ergast Developer API Homepage</a></center>
+
+Data in the *ergast experimental Motor Racing Developer API* is organized into $13$ database tables:
+
+* ***circuits***:<br>&nbsp;&nbsp;information about each circuit and its competition history
+* ***constructorResults***: <br>&nbsp;&nbsp;team results for each race
+* ***constructorStandings***: :<br>&nbsp;&nbsp;team standings after each race
+* ***constructors***: :<br>&nbsp;&nbsp;profiles of each team
+* ***driverStandings***: :<br>&nbsp;&nbsp;driver standings after each race
+* ***drivers***: :<br>&nbsp;&nbsp;nformation bout each driver and their race career
+* ***lapTimes***: :<br>&nbsp;&nbsp;race lap times from the 2011 season onward
+* ***pitStops***: :<br>&nbsp;&nbsp;pit stop data for each race from 2012 onward
+* ***qualifying***: :<br>&nbsp;&nbsp;the results of each qualifying session from 2003 onward
+* ***races***: :<br>&nbsp;&nbsp;the races that took place in each given season
+* ***results***: :<br>&nbsp;&nbsp;the final classification for each race
+* ***seasons***: :<br>&nbsp;&nbsp;a list of the seasons for which data is available
+* ***status***: :<br>&nbsp;&nbsp;describes the finishing status for each competitor
+
+Many of these tables (***status***, ***qualifying***, *etc*.) will likely not be of interest to us. Others (***results***, ***drivers***, ***races***, *etc*.) will be extremely useful. That said, it is nevertheless important to obtain an understanding of the relations between all of the different tables in the database.
+
+To that end, we do need a schema with primary and foreign keys in the database and displays the fields in each table. The schema below illustrates a useful one:
+
+```{r}
+f1db_draw(con)
+```
+<center>***ergast* Database Schema**</center>
+
+
+# Ergast Database via SQLite & dplyr
+
+A complete **MySQL** database export file ("f1db.sql.gz") is published at the *ergast* website following each race. While one could certainly import this database dump directly into a MySQL management tool and manipulate it from there, I would prefer the ability to connect to the database from *RStudio* and leverage several *R* packages (such as *DBI*, *SQLite*, *dbplyr*, etc.) to interface with the database.
+
+While R **can** connect to a MySQL database, this approach does require that the data be uploaded to a MySQL database, and that the database be configured with the appropriate credentials and permissions to allow R access. A simpler route is to first downloads the *ergast* database as a set of CSV files and create a <a href="https://SQLite.org/" target="_blank">SQLite</a>[^1] database file.
+
+[^1]: SQLite is a nifty C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine. SQLite is the most used database engine in the world. SQLite is built into all mobile phones and most computers and comes bundled inside countless other applications that people use every day. The SQLite file format is stable, cross-platform, and backwards compatible. SQLite’s integration with R and Python is so complete that it can work directly on in-memory language objects without copying. This lets us use SQLite directly on Pandas and R data frames, including excellent support for dplyr.
+
+
+```{r}
+downloadErgastCSV
+```
+
+<!--
+# Download Ergast CSV Database Tables
+zipdest <- "f1db_csv.zip"
+# downloads the 'Ergast' database as a set of CSV files and unzips them into a local directory
+download.file("http://ergast.com/downloads/f1db_csv.zip", destfile = zipdest)
+# CSV files downloaded by this function have column headers and are UTF-8 encoded. Each file 
+# contains a database table
+csv_dir <- destfile
+unzip(zipdest, exdir = csv_dir)
+unlink(zipdest)
+-->
+
+After downloading `f1db_csv.zip`, we can establish a connection to it like so. Although not strictly necessary, I have chosen to use *R* and *RStudio* to interface with the SQLite database. The function `createF1db` allows R to **directly** connect to the `F1db.SQLite` database file. 
+
+
+```{r}
+createF1db # https://github.com/NilsDM/f1db/tree/main/R
+```
+
+We can now use the *DBI* package to examine and/or query the database:
+
+```{r, eval=FALSE, echo=FALSE}
+# Tables in database
+dbListTables(con) %>%
+  map(~tbl(con, .x) %>% collect()) %>%
+  set_names(dbListTables(con)) %>% #listviewer::jsonedit()
+  glimpse(.)
+```
+
+```{r}
+drivers <- tbl(con, "drivers") %>% collect()
+drivers %>% format.dt.f(.)
+```
+
+```{r}
+races <- tbl(con, "races") %>% collect()
+races %>% format.dt.f(.)
+```
+
+When using the *DBI* package, the **dbGetQuery()** function will send a SQL query to the database and return the results as a dataframe. **dbGetQuery()** takes, at a minimum, two arguments:
+
+* ***conn*** - A DBIConnection object, which I've previously saved as 'con'
+* ***statement*** - A character string containing an SQL query. *DBI* will raise an error if the syntax of the query is invalid.
+
+A sample query, then, might look something like this:
+
+```{r}
+driver_info1 <- dbGetQuery(
+  conn = con,
+  statement = "SELECT driverId, forename, surname, driverRef, dob,
+  nationality
+  FROM drivers
+  ORDER BY driverId;"
+)
+
+# For increased clarity, however, I will keep showing both the SQL query and the dplyr syntax:
+
+driver_info2 <- tbl(con, "drivers") %>% # R or Python
+  collect() %>%
+  select(driverId, forename, surname, driverRef, dob, nationality) %>%
+  arrange(driverId)
+
+all.equal(driver_info1, driver_info2, check.attributes=FALSE)
+
+driver_info1 %>% format.dt.f(.)
+```
+
+Althought there are many more race records that one could derive from the *ergast* F1 database, some of these will likely be challenging or require somewhat circuitous means (*self joins*, in particular). 
+
+
+
+The *dplyr* *R* package <a href="https://cran.r-project.org/web/packages/dplyr/vignettes/window-functions.html" target="_blank">contain many window functions</a> such as:
+
+* *minrank()* 
+* *dense_rank()*
+* *cumsum()*
+* *lead()*
+* *lag()*
+* *etc.*
+
+If database tables are pulled into local **R** objects, we can use the full suite of *dplyr* window functions to solve problems that might require very complicated SQL solutions in SQLite.
+
+With this bit of explanation out of the way, we can move ahead with some simple queries to return interesting F1 racing records. 
+
+For example, imagine we are interested in knowing <span style="color:black">**which driver recorded the most wins in the first season of their F1 career**</span>?
+
+An *R* solution might look like the following:
+
+```{r}
+# Most wins in first season of career
+driverStandings <-  tbl(con, "driver_standings") %>% collect()
+# list(driverStandings) %>% set_names("driverStandings") %>% listviewer::jsonedit()
+
+driverStandings %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  group_by(driverId, forename, surname, nationality) %>%
+  filter(year == min(year)) %>%
+  summarize(Wins = max(wins)) %>%
+  ungroup() %>%
+  select(-driverId) %>%
+  arrange(desc(Wins)) %>%
+  format.dt.f(.)
+```
+
+<!--
+using a clause like <span style="color:blue">WHERE year = MIN(year)</span> 
+-->
+
+A similar query in SQLite may also work since <a href="https://www.sqlite.org/windowfunctions.html" target="_blank">SQLites</a> has window functions.
+
+Similarly, if we were to ask <span style="color:black">**which driver entered the most races without ever recording a win**</span>, we might use the following *dplyr* call:
+
+```{r}
+# Most races entered without recording a win
+driverStandings %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  select(driverId, forename, surname, nationality, wins) %>%
+  group_by(driverId, forename, surname, nationality) %>%
+  mutate(Total_Wins = sum(wins)) %>%
+  filter(Total_Wins == 0) %>%
+  count() %>%
+  arrange(desc(n)) %>%
+  format.dt.f(.)
+```
+
+The solutions to some problems will likely be easier to obtain using pure SQL syntax, while others will likely be more intuitive using *dplyr* syntax. 
+
+# Conclusion
+
+Personally, I have mixed feelings about SQL. On the positive side lies the ability of good database engines to optimize arbitrary queries for performance. And, SQL’s declarative style and relational model can indeed make many data wrangling intentions easy to express, at least for simple data manipulation tasks.
+
+But, many problems linger with SQL implementations. Query optimizers, it turns out, can only do so much. Worse, there exists substantial syntax variation and idiosyncrasies across various SQL implementations. For even slightly complex tasks SQL often becomes difficult to write and understand. I find SQL awkward to compose and nest. It is hard to do things that should be really simple like mixing result types in a query (scalars and vectors, say). And there are obvious downsides of representing SQL programs as big character strings in R–for instance, all errors can only be caught at run time.
+
+Fortunately, there is <a href="https://dplyr.tidyverse.org/" target="_blank">dplyr</a>! Dplyr calls itself a grammar of data manipulation, but it is also an impedance matching circuit that lets us write lovely composable R functions and still gain the benefits of query optimization and performance that the database implementation has to offer.
+
+Finally, for problems that fit in our system’s memory, we may not find any performance advantage of using SQLite over alternative R approaches. In particular <a href="https://github.com/Rdatatable/data.table" target="_blank">data.table</a> is usually (always?) faster than SQLite for in-memory problems. Humble base R also often gets close to or exceeds SQLite performance. Plus, base R and *data.table* offer a substantial array of specialized data manipulation operations that easily exceed the performance and capabilities of SQLite, as shown in some of the pieces. However, SQLite works without change on problems that are larger than the computer memory residing in files which can be an important advantage in some cases.
+
+It seems to me SQLite is best used with R using dplyr, a really nice combination of technologies. The ability to pick-and-choose the best tool for the job, however, is deeply valuable and both can clearly be used to supplement and assist each other. In summary:
+
+- Use SQLite for larger-than-RAM data manipulation.
+- Use SQLite with dplyr, avoid SQL except for basic stuff.
+- But remember, there are companies that are very comfortable with SQL, and we may agree that for many data manipulation tasks SQL can be quite nice. For those tasks, SQLite provides a reasonably high-performance and elegantly integrated solution.
+
+
+```{r, echo=FALSE, include=FALSE}
+# remeber to call dbDisconnect() when finished working with a connection!
+dbDisconnect(con)
+fl %>% detach()
+rm(fl, nm)
+# file.remove(file.path(path_root, "f1db-main.zip"))
+file.remove(file.path(path_root, "f1_db.SQLite"))
+unlink(file.path(path_root, "f1db_csv"), recursive = TRUE) 
+
+rm(driver_info1, driver_info2, drivers, driverStandings, races)
+rm(con, dm_obj, f1db)
+rm(path_libs, path_root)
+rm(format.dt.f)
+```

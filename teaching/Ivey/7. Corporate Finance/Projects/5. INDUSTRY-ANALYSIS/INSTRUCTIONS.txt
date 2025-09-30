@@ -1,0 +1,3 @@
+(1) Provide full explanation of the function "PRINT_INDUSTRIES_REPORTS_FUNC" on workbook "MODEL"
+(2) Pick any model and provide full explanation of its function. Hint: review the formulations of the function you pick on workbook "PROTOTYPE"
+ADDED BONUS: Pick a column on workbook "MODEL" --> worksheet "MASTER" and briefly explain how this column was generated using the data on workbook "RAW_DATA"

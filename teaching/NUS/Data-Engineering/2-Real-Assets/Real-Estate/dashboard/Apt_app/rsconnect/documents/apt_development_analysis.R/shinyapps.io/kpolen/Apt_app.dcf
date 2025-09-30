@@ -1,0 +1,13 @@
+name: Apt_app
+title: Apt_app
+username:
+account: kpolen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3015331
+bundleId: 3740977
+url: https://kpolen.shinyapps.io/Apt_app/
+when: 1602699197.42091
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: apt_slides.html|apt_slides.Rmd|apt_tester.R

@@ -1,0 +1,232 @@
+Function VALUE_PER_OPTION_FUNC( _
+ByVal STOCK_PRICE_VAL As Double, _
+ByVal NUMBER_SHARES_OUTSTANDING_VAL As Double, _
+ByVal AVG_STRIKE_VAL As Double, _
+ByVal RISK_FREE_VAL As Double, _
+ByVal STANDARD_DEVIATION_VAL As Double, _
+ByVal AVG_MATURITY_VAL As Double, _
+ByVal DIVIDEND_YIELD_VAL As Double, _
+ByVal NUMBER_OPTIONS_OUTSTANDING_VAL As Double, _
+Optional ByVal ADJUSTED_STOCK_PRICE_VAL As Variant = "", _
+Optional ByVal OUTPUT As Integer = 0)
+
+Dim OPTION_VAL As Double
+
+On Error GoTo ERROR_LABEL
+
+If ADJUSTED_STOCK_PRICE_VAL = "" Then
+    PUB_VALUE_PER_OPTION_ARR(1) = STOCK_PRICE_VAL
+    PUB_VALUE_PER_OPTION_ARR(2) = NUMBER_SHARES_OUTSTANDING_VAL
+    PUB_VALUE_PER_OPTION_ARR(3) = AVG_STRIKE_VAL
+    PUB_VALUE_PER_OPTION_ARR(4) = RISK_FREE_VAL
+    PUB_VALUE_PER_OPTION_ARR(5) = STANDARD_DEVIATION_VAL
+    PUB_VALUE_PER_OPTION_ARR(6) = AVG_MATURITY_VAL
+    PUB_VALUE_PER_OPTION_ARR(7) = DIVIDEND_YIELD_VAL
+    PUB_VALUE_PER_OPTION_ARR(8) = NUMBER_OPTIONS_OUTSTANDING_VAL
+    
+    ADJUSTED_STOCK_PRICE_VAL = _
+        MULLER_ZERO_FUNC(0.0001, 1000, "VALUE_PER_OPTION_OBJ_FUNC", , , 1000, 10 ^ -10)
+        
+End If
+
+OPTION_VAL = _
+Exp((0 - DIVIDEND_YIELD_VAL) * AVG_MATURITY_VAL) * ADJUSTED_STOCK_PRICE_VAL * _
+CND_FUNC(((Log(ADJUSTED_STOCK_PRICE_VAL / AVG_STRIKE_VAL) + _
+((RISK_FREE_VAL - DIVIDEND_YIELD_VAL) + (STANDARD_DEVIATION_VAL ^ 2) / 2) _
+* AVG_MATURITY_VAL) / ((STANDARD_DEVIATION_VAL ^ 2 ^ 0.5) _
+* (AVG_MATURITY_VAL ^ 0.5))), 0, 1) - AVG_STRIKE_VAL * _
+(Exp((0 - RISK_FREE_VAL) * AVG_MATURITY_VAL)) * _
+CND_FUNC((((Log(ADJUSTED_STOCK_PRICE_VAL / _
+AVG_STRIKE_VAL) + ((RISK_FREE_VAL - DIVIDEND_YIELD_VAL) + _
+(STANDARD_DEVIATION_VAL ^ 2) / 2) * AVG_MATURITY_VAL) / _
+((STANDARD_DEVIATION_VAL ^ 2 ^ 0.5) * (AVG_MATURITY_VAL ^ 0.5))) - _
+(((STANDARD_DEVIATION_VAL ^ 2) ^ 0.5) * _
+(AVG_MATURITY_VAL ^ 0.5))), 0, 1)
+
+'----------------------------------------------------------------------------------
+Select Case OUTPUT
+'----------------------------------------------------------------------------------
+Case 0 'Value per option
+'----------------------------------------------------------------------------------
+    VALUE_PER_OPTION_FUNC = OPTION_VAL
+'----------------------------------------------------------------------------------
+Case Else 'Adjusted Stock Price
+'----------------------------------------------------------------------------------
+    VALUE_PER_OPTION_FUNC = (STOCK_PRICE_VAL * NUMBER_SHARES_OUTSTANDING_VAL + _
+                            OPTION_VAL * NUMBER_OPTIONS_OUTSTANDING_VAL) / _
+                            (NUMBER_SHARES_OUTSTANDING_VAL + NUMBER_OPTIONS_OUTSTANDING_VAL)
+'----------------------------------------------------------------------------------
+End Select
+'----------------------------------------------------------------------------------
+
+'The VALUE_PER_OPTION_FUNC function determines the current market value of an option based on a series of inputs,
+'including 'stock price, outstanding shares, averages trike price, risk free rate, standard deviation,
+'average time to maturity, dividend yield, and options outstanding. Using a formulaic format similar to that of
+'Black-Scholes, the VALUE_PER_OPTION_FUNC function effectively calculates the extrinsic (market) value of the options.
+'It then goes on to calculate the adjusted stock price based on the number of outstanding stocks and options, and their
+'respective values. Upon error, the code jumps to PUB_EPSILON, which, my guess leads me to believe that this function
+'identifies option pricing in conjunction with the relationship between the option price and the volatility of the
+'underlying equity.
+
+Exit Function
+ERROR_LABEL:
+VALUE_PER_OPTION_FUNC = PUB_EPSILON
+End Function
+
+
+Function VALUE_PER_OPTION_OBJ_FUNC(ByVal X_VAL As Double)
+
+Dim ADJUSTED_STOCK_PRICE_VAL As Double
+
+On Error GoTo ERROR_LABEL
+
+ADJUSTED_STOCK_PRICE_VAL = VALUE_PER_OPTION_FUNC( _
+    PUB_VALUE_PER_OPTION_ARR(1), _
+    PUB_VALUE_PER_OPTION_ARR(2), _
+    PUB_VALUE_PER_OPTION_ARR(3), _
+    PUB_VALUE_PER_OPTION_ARR(4), _
+    PUB_VALUE_PER_OPTION_ARR(5), _
+    PUB_VALUE_PER_OPTION_ARR(6), _
+    PUB_VALUE_PER_OPTION_ARR(7), _
+    PUB_VALUE_PER_OPTION_ARR(8), _
+    X_VAL, 1)
+
+VALUE_PER_OPTION_OBJ_FUNC = (X_VAL - ADJUSTED_STOCK_PRICE_VAL)
+
+Exit Function
+ERROR_LABEL:
+VALUE_PER_OPTION_OBJ_FUNC = PUB_EPSILON
+End Function
+
+
+'Instead of using WorksheetFunction.NormDist use the function below coded by
+'Melody as part of an extra assignment!
+
+'Remember Excel NormDist(Z_VAL) = CND_FUNC(Z_VAL,0,1)
+'The Speed Improvement is higher than 100x
+
+Function CND_FUNC(ByVal X_VAL As Double, _
+Optional ByVal MEAN_VAL As Double = 0, _
+Optional SD_VAL As Double = 1) As Double
+
+'Reference:
+'Bagby, R. J. "Calculating Normal Probabilities." Amer. Math. Monthly 102, 46-49, 1995
+
+Dim k As Long
+Dim Z_VAL As Double
+Dim T_VAL As Double
+Dim pi As Double
+
+On Error GoTo ERROR_LABEL
+
+pi = 3.14159265358979
+If X_VAL > MEAN_VAL Then k = 1 Else k = -1
+Z_VAL = (X_VAL - MEAN_VAL) / SD_VAL
+T_VAL = 7 * Exp(-0.5 * Z_VAL ^ 2) + 16 * Exp(-1 * (2 - Sqr(2)) * Z_VAL ^ 2) + Exp(-1 * Z_VAL ^ 2) * (7 + 0.25 * pi * Z_VAL ^ 2)
+T_VAL = Sqr(1 - T_VAL / 30)
+CND_FUNC = 0.5 + k * 0.5 * T_VAL
+
+Exit Function
+ERROR_LABEL:
+CND_FUNC = Err.Number
+End Function
+
+
+Function MULLER_ZERO_FUNC(ByVal LOWER_VAL As Double, _
+ByVal UPPER_VAL As Double, _
+ByVal FUNC_NAME_STR As String, _
+Optional ByRef CONVERG_VAL As Integer, _
+Optional ByRef COUNTER As Long, _
+Optional ByVal nLOOPS As Long = 600, _
+Optional ByVal tolerance As Double = 0.000000000000001)
+
+Dim ATEMP_VAL As Double
+Dim BTEMP_VAL As Double
+Dim CTEMP_VAL As Double
+Dim DTEMP_VAL As Double
+
+Dim TEMP_MID As Double
+Dim TEMP_MULT As Double
+Dim TEMP_GRAD As Double
+
+Dim TEMP_FUNC As Double
+Dim FIRST_FUNC As Double
+Dim SECOND_FUNC As Double
+
+On Error GoTo ERROR_LABEL
+'-------------------------------------------------------------------------------
+' MULLER implements Muller's method
+' http://en.wikipedia.org/wiki/M%C3%BCller%27s_method
+'  Parameters:
+'
+'    Input/output, real X, X1, X2.
+'    On input, three distinct points that start the method.
+'    On output, X is an approximation to a root of the equation
+'    which satisfies abs ( F(X) ) < ABSERR, and X1 and X2 are the
+'    previous estimates.
+'-------------------------------------------------------------------------------
+
+  CONVERG_VAL = 0
+  COUNTER = 0
+  TEMP_MID = (LOWER_VAL + UPPER_VAL) / 2
+  
+  SECOND_FUNC = Excel.Application.Run(FUNC_NAME_STR, UPPER_VAL)
+  FIRST_FUNC = Excel.Application.Run(FUNC_NAME_STR, LOWER_VAL)
+  TEMP_FUNC = Excel.Application.Run(FUNC_NAME_STR, TEMP_MID)
+
+'  Iteration loop:
+
+  Do
+'
+'  If the error tolerance is satisfied, then exit.
+'
+    If (Abs(TEMP_FUNC) <= tolerance) Then
+      MULLER_ZERO_FUNC = TEMP_MID
+      Exit Function
+    End If
+
+    COUNTER = COUNTER + 1
+
+    If (COUNTER > nLOOPS) Then
+      CONVERG_VAL = 2
+      MULLER_ZERO_FUNC = TEMP_MID
+      Exit Function
+    End If
+
+    DTEMP_VAL = (TEMP_MID - LOWER_VAL) / (LOWER_VAL - UPPER_VAL)
+    'variabile normalizzata   0 < DTEMP < 1
+
+    ATEMP_VAL = DTEMP_VAL * TEMP_FUNC - DTEMP_VAL * (1 + DTEMP_VAL) * FIRST_FUNC + _
+            DTEMP_VAL ^ 2 * SECOND_FUNC
+    BTEMP_VAL = (2 * DTEMP_VAL + 1) * TEMP_FUNC - (1 + DTEMP_VAL) ^ 2 * FIRST_FUNC + _
+        DTEMP_VAL ^ 2 * SECOND_FUNC
+    
+    CTEMP_VAL = (1 + DTEMP_VAL) * TEMP_FUNC
+
+    TEMP_MULT = BTEMP_VAL ^ 2 - 4 * ATEMP_VAL * CTEMP_VAL
+    If TEMP_MULT < 0 Then TEMP_MULT = 0
+    TEMP_MULT = Sqr(TEMP_MULT)
+    If (BTEMP_VAL < 0) Then: TEMP_MULT = -TEMP_MULT
+
+'  Set the increment.
+'
+    TEMP_GRAD = -(TEMP_MID - LOWER_VAL) * 2 * CTEMP_VAL / (BTEMP_VAL + TEMP_MULT)
+'
+'  Remember current data for next step.
+'
+    UPPER_VAL = LOWER_VAL
+    SECOND_FUNC = FIRST_FUNC
+    LOWER_VAL = TEMP_MID
+    FIRST_FUNC = TEMP_FUNC
+'
+'  Update the iterate and function values.
+'
+    TEMP_MID = TEMP_MID + TEMP_GRAD
+    TEMP_FUNC = Excel.Application.Run(FUNC_NAME_STR, TEMP_MID)
+
+  Loop
+
+Exit Function
+ERROR_LABEL:
+MULLER_ZERO_FUNC = PUB_EPSILON
+End Function

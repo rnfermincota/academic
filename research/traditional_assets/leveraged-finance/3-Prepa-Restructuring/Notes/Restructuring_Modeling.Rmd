@@ -1,0 +1,23 @@
+---
+title: "Restructuring Modeling"
+author: "Rafael Nicolas Fermin Cota"
+date: "`r Sys.Date()`"
+---
+
+The aim of this module is to identify key value drivers, distinguish between different valuation methods, and assess their impact on the value of distressed companies. The focus will be on developing the knowledge and spreadsheet skills necessary to estimate the potential recovery of various debt classes for the [Puerto Rico Electric Power Authority (PREPA)](http://www.prepa.com/).
+
+##### [PREPA Moves to Restructure $9B in Debt](2016-08-02-PREPA.html)
+
+* A plan to restructure $9 billion in PREPA debt — representing an eighth of the Commonwealth’s staggering $72 billion in debt—surfaced as a top priority at the Puerto Rico Energy Commission, the U.S. territory’s energy regulator, on April 7, 2016.
+
+* The plan filed by the [PREPA Revitalization Corp.](http://www.prepa.com/docs/Summary%20of%20Verified%20Petition%20for%20Restructuring%20Order%20(for%20PREC)%20[fv].pdf) — a “special purpose vehicle” created through commonwealth legislation in February 2016 to manage the debt—proposed that the Revitalization Corp. sell “restructuring bonds” to existing bondholders. 
+
+* As of July 14, 2016, [PREPA has performed twice as poorly as budgeted in the first 10 months of the fiscal year](http://www.bondbuyer.com/news/regionalnews/prepa-performed-twice-as-badly-as-expected-in-first-10-months-1108539-1.html).  Our [analysis](2016-08-02-PREPA-Model.pdf) show rates staying consistent to where they are today but with a 7cents/mWh hike when the debt moratorium ends; this is much higher than the current rate proposed by the _PREPA Revitalization Corp_.
+
+* Although we recognize that the proposed rate will be phased in gradually, in our opinion, it is [not enough to save the island](http://www.bloomberg.com/news/articles/2016-06-30/puerto-rico-faces-record-default-a-look-at-the-2-billion-due). The only way the difference in rates, between the _PREPA Revitalization Corp_ and our [model](2016-08-02-PREPA-Model.xlsx), can be accounted for is in the assumptions, likely off of low capital expenditures, aggressively lower costs, and improving demographic; all of which are contrary to our expectations.
+
+The essence of the plan was to lower the public power agency’s debt by about $1.4 billion by securitizing the obligation. Bondholders would get restructuring bonds in place of current revenue bonds. [In this module we show how the restructuring plan was a _disaster_ in the making](2016-08-02-PREPA.html), and give students an understanding of how to: (1) use a structured approach to assign value to distressed public companies; (2) elect and apply the most appropriate valuation techniques to use on a utility company, and understand how different valuation techniques might influence the ultimate valuation; (3) evaluate options available to lenders and investors in benchmarking the likelihood of recovery against other alternatives and determine the current market prices of the company's debt.
+
+The lecture is targeted towards [HBA](http://www.ivey.uwo.ca/hba/) students interested in learning how to analyze distressed debt assets or a debt restructuring and workout. This includes those interested in investment banking, buy and sell side credit, hedge funds, and private equity firms. A good understanding of the fundamentals of [fixed income](http://rnfc.org/ivey/excel/modules/bond-yields-modelling/) and [LBO modelling](http://rnfc.org/ivey/excel/modules/LBO%20model/) are a pre-requisite.
+
+I would like to thank Allan Yan and Arth Patel for their excellent research and modelling assistance with the [PREPA spreadsheet](2016-08-02-PREPA-Model.xlsx).

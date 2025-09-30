@@ -1,0 +1,246 @@
+    'To activate in Excel the R1C1 Reference Style go to Options - Formulas and check R1C1
+    'reference style!!
+    '--------------------------------------------------------------------------------------------
+    'Operating leases number of years
+    '=SUM(IF(RC[-49]>0,1,0),IF(RC[-48]>0,1,0),IF(RC[-47]>0,1,0),IF(RC[-46]>0,1,0),IF(RC[-45]>0,1,0))
+    'first formulation start in Column 69, so column 69-49 = 20
+    '=IIF(TEMP_MATRIX(i, 20)>0,1,0) + IIF(TEMP_MATRIX(i, 21)>0,1,0) + IIF(TEMP_MATRIX(i, 22)>0,1,0) + IIF(TEMP_MATRIX(i, 23)>0,1,0) + IIF(TEMP_MATRIX(i, 24)>0,1,0))
+    For j = 20 To 24
+        If TEMP_MATRIX(i, j) > 0 Then: TEMP_MATRIX(i, NSIZE + 1) = TEMP_MATRIX(i, NSIZE + 1) + 1
+    Next j
+    
+
+
+    '--------------------------------------------------------------------------------------------
+    'Number of years embedded in leases
+    '=IF(RC[-1]=0,0,IF(AVERAGE(RC[-50],RC[-49],RC[-48],RC[-47],RC[-46])=0,0,ROUND(RC[-45]/AVERAGE(RC[-50],RC[-49],RC[-48],RC[-47],RC[-46]),0)))
+    'column 70-50 = 20
+    If TEMP_MATRIX(i, NSIZE + 1) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 2) = 0
+    Else
+        k = TEMP_MATRIX(i, NSIZE + 1)
+        TEMP_VAL = TEMP_MATRIX(i, 20) + TEMP_MATRIX(i, 21) + TEMP_MATRIX(i, 22) + _
+                   TEMP_MATRIX(i, 23) + TEMP_MATRIX(i, 24)
+        If TEMP_VAL = 0 Then
+            TEMP_MATRIX(i, NSIZE + 2) = 0
+        Else
+            TEMP_MATRIX(i, NSIZE + 2) = Round(TEMP_MATRIX(i, 25) / (TEMP_VAL / k), 0)
+        End If
+    End If
+
+    '--------------------------------------------------------------------------------------------
+    'Debt Value of leases
+    'From: =IF(RC[-2]=0,0,SUM(RC[-51]/(1+RC[-53])^1,RC[-50]/(1+RC[-53])^2,RC[-49]/(1+RC[-53])^3,RC[-48]/(1+RC[-53])^4,RC[-47]/(1+RC[-53])^5,IF(RC[-1]>0,(IF(RC[-46]>0,IF(RC[-1]>1,RC[-46]/RC[-1],RC[-46]),0)*(1-(1+RC[-53])^(-RC[-1]))/RC[-53])/(1+RC[-53])^5,IF(RC[-46]>0,IF(RC[-1]>1,RC[-46]/RC[-1],RC[-46]),0)/(1+RC[-53])^6)))
+    'To:
+    'IF RC[-2]=0 Then
+    '   TEMP_MATRIX(i, NSIZE + 3) = 0
+    'Else
+    '   TEMP_MATRIX(i, NSIZE + 3) = RC[-51]/(1+RC[-53])^1 + RC[-50]/(1+RC[-53])^2 + RC[-49]/(1+RC[-53])^3 + RC[-48]/(1+RC[-53])^4 + RC[-47]/(1+RC[-53])^5 +
+    '   IF RC[-1]>0 Then
+    '       IF RC[-46]>0 Then
+    '           IF RC[-1]>1 Then
+    '               TEMP_VAL = RC[-46]/RC[-1]
+    '           Else
+    '               TEMP_VAL = RC[-46]
+    '           End If
+    '       Else
+    '           TEMP_VAL = 0
+    '       End If
+    '       TEMP_VAL = TEMP_VAL *(1-(1+RC[-53])^(-RC[-1]))/RC[-53])/(1+RC[-53])^5
+    '   Else
+    '       IF RC[-46]>0 Then
+    '           IF RC[-1]>1 Then
+    '               TEMP_VAL = RC[-46]/RC[-1]
+    '           Else
+    '               TEMP_VAL = RC[-46]
+    '           End If
+    '       Else
+    '           TEMP_VAL = 0
+    '       End If
+    '       TEMP_VAL = TEMP_VAL / (1+RC[-53])^6
+    '   End If
+    '   TEMP_MATRIX(i, NSIZE + 3) = TEMP_MATRIX(i, NSIZE + 3) + TEMP_VAL
+    'End If
+
+    If TEMP_MATRIX(i, NSIZE + 1) = 0 Then
+         TEMP_MATRIX(i, NSIZE + 3) = 0
+'If the Operating Leases number of years is 0, then the Debt Value of the leases is 0
+
+    Else
+        TEMP_MATRIX(i, NSIZE + 3) = _
+            TEMP_MATRIX(i, 20) / (1 + TEMP_MATRIX(i, 18)) ^ 1 + _
+            TEMP_MATRIX(i, 21) / (1 + TEMP_MATRIX(i, 18)) ^ 2 + _
+            TEMP_MATRIX(i, 22) / (1 + TEMP_MATRIX(i, 18)) ^ 3 + _
+            TEMP_MATRIX(i, 23) / (1 + TEMP_MATRIX(i, 18)) ^ 4 + _
+            TEMP_MATRIX(i, 24) / (1 + TEMP_MATRIX(i, 18)) ^ 5
+
+'If the Operating Leases number of years is not 0, then the Debt Value is equal to the sum of the
+'present value of the lease commitments from years 1 to 5. The discount rate is equal to the Pre-tax cost of debt
+'for the company.
+
+        If TEMP_MATRIX(i, NSIZE + 2) > 0 Then
+            If TEMP_MATRIX(i, 25) > 0 Then
+                If TEMP_MATRIX(i, NSIZE + 2) > 1 Then
+                    TEMP_VAL = TEMP_MATRIX(i, 25) / TEMP_MATRIX(i, NSIZE + 2)
+
+                Else
+                    TEMP_VAL = TEMP_MATRIX(i, 25)
+                End If
+            Else
+                TEMP_VAL = 0
+            End If
+            TEMP_VAL = TEMP_VAL * (1 - 1 / (1 + TEMP_MATRIX(i, 18)) ^ TEMP_MATRIX(i, NSIZE + 2)) / TEMP_MATRIX(i, 18)
+            TEMP_VAL = TEMP_VAL / (1 + TEMP_MATRIX(i, 18)) ^ TEMP_MATRIX(i, NSIZE + 1)
+        Else
+            If TEMP_MATRIX(i, 25) > 0 Then
+                If TEMP_MATRIX(i, NSIZE + 2) > 1 Then
+                    TEMP_VAL = TEMP_MATRIX(i, 25) / TEMP_MATRIX(i, NSIZE + 2)
+                Else
+                    TEMP_VAL = TEMP_MATRIX(i, 25)
+                End If
+            Else
+                TEMP_VAL = 0
+            End If
+            TEMP_VAL = TEMP_VAL / (1 + TEMP_MATRIX(i, 18)) ^ (TEMP_MATRIX(i, NSIZE + 1) + 1)
+        End If
+        TEMP_MATRIX(i, NSIZE + 3) = TEMP_MATRIX(i, NSIZE + 3) + TEMP_VAL
+    End If
+
+'Here the code is attempting to assign a value to TEMP_VAL based on a present value of the
+'Lease beyond last year/number of years embedded in lease. In the event that the number of years embedded in the lease
+'is equal to 0, TEMP_VAL must be equal to the lease commitment beyond the last year. In the event that Lease beyond
+'last year is 0, then TEMP_VAL is also 0. Ultimately, we are trying to determine the present value of the
+'terminal value of the lease beyond the last year for each year that the lease is embedded. In the event however,
+'that the number of years embedded in the leases is greater than 1, the number of years by which to present value also
+'increases by 1 to account for the time value of money for the first year.
+'In both instances, as long as the number of years embedded is greater than 0, the Debt value of
+'the leases is equal to the TEMP_VAL added to the previous outstanding value of the Debt value of the lease.
+
+    
+    
+    '--------------------------------------------------------------------------------------------
+    TEMP_MATRIX(i, NSIZE + 4) = TEMP_MATRIX(i, 46) + _
+                                TEMP_MATRIX(i, NSIZE + 3) * TEMP_MATRIX(i, 18)
+'This calculates EBIT after accounting for interest accrued on the outstanding debt-value of the leases
+
+    TEMP_MATRIX(i, NSIZE + 5) = TEMP_MATRIX(i, 15) + TEMP_MATRIX(i, NSIZE + 3)
+'This calculates the Total amount of interest-bearing debt after accounting for the debt value of leases
+
+    TEMP_MATRIX(i, NSIZE + 6) = TEMP_MATRIX(i, 46)
+'Lease-adjusted operating income is equal to the Fiscal-year EBIT
+
+    TEMP_MATRIX(i, NSIZE + 7) = TEMP_MATRIX(i, 19)
+'This states that the adjusted lease expense is equal to the interest-accrued lease expense
+    
+    If TEMP_MATRIX(i, NSIZE + 3) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 8) = 0
+    Else
+        TEMP_MATRIX(i, NSIZE + 8) = _
+            TEMP_MATRIX(i, NSIZE + 3) / (TEMP_MATRIX(i, NSIZE + 1) + TEMP_MATRIX(i, NSIZE + 2))
+    End If
+'This code calculates the annual depreciation on the debt value of leases based on the total number of years
+'embedded in the lease in addition to the total number operating lease years
+
+    TEMP_MATRIX(i, NSIZE + 9) = TEMP_MATRIX(i, NSIZE + 6) + _
+                                TEMP_MATRIX(i, NSIZE + 7) - TEMP_MATRIX(i, NSIZE + 8)
+'Adjusted operating income is found by adding together both the EBIT and accrued interest amounts and subtracting the
+'depreciation associated with the asset. This depreciation amount can be calculated above.
+
+    For j = 59 To NSIZE 'R&D expenses from years 1 to 10
+        If TEMP_MATRIX(i, j) > 0 Then: TEMP_MATRIX(i, NSIZE + 10) = TEMP_MATRIX(i, NSIZE + 10) + 1
+    Next j
+'This code simply counts the number of years in which our company has incurred R&D expenses to determine over
+'how many years the R&D expense should be amortized.
+
+    If TEMP_MATRIX(i, NSIZE + 10) = 0 Then
+        TEMP_MATRIX(i, NSIZE + 11) = 0
+        TEMP_MATRIX(i, NSIZE + 12) = 0
+    Else
+        TEMP_MATRIX(i, NSIZE + 11) = TEMP_MATRIX(i, 58) * 1
+        k = 1
+        For j = 59 To NSIZE
+            TEMP_MATRIX(i, NSIZE + 11) = TEMP_MATRIX(i, NSIZE + 11) + _
+                TEMP_MATRIX(i, j) * (TEMP_MATRIX(i, NSIZE + 10) - k) / _
+                TEMP_MATRIX(i, NSIZE + 10)
+            TEMP_MATRIX(i, NSIZE + 12) = TEMP_MATRIX(i, NSIZE + 12) + TEMP_MATRIX(i, j)
+            k = k + 1
+        Next j
+        TEMP_MATRIX(i, NSIZE + 12) = TEMP_MATRIX(i, NSIZE + 12) / TEMP_MATRIX(i, NSIZE + 10)
+    End If
+'The research expense is equal to the R&D expense in year 0 times the portion of the previous year's R&D expense
+'over the current year's R&D expense until k loops to k = TEMP_MATRIX(i, NSIZE + 10)
+'Amortization is simply equal to the total amortization to date plus the most recent year's R&D expense divided by the
+'number of periods in which the R&D expense was incurred.
+
+    TEMP_MATRIX(i, NSIZE + 13) = TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'In order to arrive at adjusted Operating income (i.e. EBITDA) we must subtract the Amortization expense from the
+'total R&D expense to arrive at R&D Expense Less: Amortization
+
+    TEMP_MATRIX(i, NSIZE + 14) = TEMP_MATRIX(i, 43) + TEMP_MATRIX(i, 19) + TEMP_MATRIX(i, 58)
+'EBITDA for the last fiscal year is equal to last year's EBITDA + Lease expense + Year 0 Research expense
+'(This doesn't make sense to me.)
+
+    TEMP_MATRIX(i, NSIZE + 15) = TEMP_MATRIX(i, 44) + TEMP_MATRIX(i, 19) + TEMP_MATRIX(i, 58)
+'EBITDA for the last 12 months is equal to EBITDA for the last 12 months + Lease expense + Year 0 research expense
+    
+    TEMP_MATRIX(i, NSIZE + 16) = TEMP_MATRIX(i, 45) + TEMP_MATRIX(i, 19) + TEMP_MATRIX(i, 58)
+'EBITDA going forward is equal to EBITDA: Forward + Lease Expense + Year 0 research expense
+    
+    TEMP_MATRIX(i, NSIZE + 17) = TEMP_MATRIX(i, 46) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'EBIT for last fiscal year is equal to EBIT + Lease expense - Asset depreciation + Year 0 Research expense -
+'current year Amortization
+                                 
+    TEMP_MATRIX(i, NSIZE + 18) = TEMP_MATRIX(i, 47) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'EBIT: Last 12 months = EBIT: Last 12 months + Lease expense - Asset Depreciation + Year 0 Research expense -
+'current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 19) = TEMP_MATRIX(i, 48) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'EBIT: Forward = EBIT: Forward + Lease Expense - Asset Depreciation + Year 0 Research Expense -
+'Current year Amortization
+
+    TEMP_MATRIX(i, NSIZE + 20) = TEMP_MATRIX(i, 46) * (1 - TEMP_MATRIX(i, 49)) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'After-tax EBIT = EBIT * (1 - Effective tax rate) + Lease Expense - Asset Depreciation + Year 0 Research Expense -
+'Current year Amortization
+
+    TEMP_MATRIX(i, NSIZE + 21) = TEMP_MATRIX(i, 47) * (1 - TEMP_MATRIX(i, 50)) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'After-tax EBIT: Last 12 months = EBIT: Last 12 months * (1 - Effective tax rate: Last 12 months) + Lease Expense -
+'Asset Depreciation + Year 0 Research Expense - Current year Amortization
+
+    TEMP_MATRIX(i, NSIZE + 22) = TEMP_MATRIX(i, 48) * (1 - TEMP_MATRIX(i, 51)) + TEMP_MATRIX(i, 19) - _
+                                 TEMP_MATRIX(i, NSIZE + 8) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'After-tax EBIT: Forward = EBIT: Forward * (1 - Effective tax rate forward) + Lease Expense -
+'Asset Depreciation + Year 0 Research Expense - Current year Amortization
+    
+    TEMP_MATRIX(i, NSIZE + 23) = TEMP_MATRIX(i, 52) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Net income: Last fiscal year = Net income: Last fiscal year + Year 0 Research Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 24) = TEMP_MATRIX(i, 53) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Net income: Last 12 months = Net income: Last 12 months + Year 0 Researxh Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 25) = TEMP_MATRIX(i, 54) + TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Net income: Forward = Net income: Forward + Year 0 Research Expense - Current Year amortization
+    
+    TEMP_MATRIX(i, NSIZE + 26) = TEMP_MATRIX(i, 52) - TEMP_MATRIX(i, 55) * (1 - TEMP_MATRIX(i, 49)) + _
+                                 TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Non-cash net income: Last fiscal year = Net income: last fiscal year - Interest income from cash: Last fiscal year *
+'(1 - Effective tax rate) + Year 0 Research Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 27) = TEMP_MATRIX(i, 53) - TEMP_MATRIX(i, 56) * (1 - TEMP_MATRIX(i, 50)) + _
+                                 TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Non-cash net income: Last 12 months = Net income: last 12 months - Interest income from cash: last 12 months *
+'(1 - Effective tax rate: Last 12 months) + Year 0 Research Expense - Current year amortization
+
+    TEMP_MATRIX(i, NSIZE + 28) = TEMP_MATRIX(i, 54) - TEMP_MATRIX(i, 57) * (1 - TEMP_MATRIX(i, 51)) + _
+                                 TEMP_MATRIX(i, 58) - TEMP_MATRIX(i, NSIZE + 12)
+'Non-cash net income: Forward = Net income: forward - Interest income from cash: forward * (1 - Effective tax rate:
+'Forward) + Year 0 Research Expense - Current Year amortization
+                                 
+    
+    TEMP_MATRIX(i, NSIZE + 29) = TEMP_MATRIX(i, 4) * TEMP_MATRIX(i, 5)
+
+'Market capitalization = Number of shares outstanding * Market Price/Share

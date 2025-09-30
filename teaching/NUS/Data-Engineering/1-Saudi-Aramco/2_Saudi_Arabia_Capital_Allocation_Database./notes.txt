@@ -1,0 +1,3 @@
+https://rpubs.com/rafael_nicolas/saudi_arabia_extracting_data
+Extracting Data from the Saudi Arabia Capital Allocation Database
+Lets look at how we can use R to automate the process of extracting relevant data from the Saudi Arabia capital allocation database.

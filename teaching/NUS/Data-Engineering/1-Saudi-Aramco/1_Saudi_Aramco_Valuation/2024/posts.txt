@@ -1,0 +1,11 @@
+https://www.instagram.com/p/C4ZvbFvOZzY/
+
+Saudi Aramco is still a cash printing machine. The company reported in 2023 $121 billion in profits. This is the second largest profit in their history, behind last year’s energy crisis fuelled boom. They have also boosted their dividend by 30% to an eye-watering $100 billion. Aramco is majority owned by the Saudi government (and PiF) and these dividends help finance their 2030 vision. An ambitious roadmap for economic diversification, global engagement, and enhanced quality of life. Put simply, it means taking these oil profits and investing in future technologies like AI and infrastructure for the energy transition. Perhaps investors should be paying as much attention to Aramco as they do big techs*. The numbers that are laid out in the 2023 Annual Report are impressive, painting a picture of the most profitable company in the world, with almost unassailable competitive advantages. Here I valued Saudi Aramco at $1.64 trillion using the equally weighted valuation model: Dividend Discount Value, FCFE Value and the FCFF-based Value of Equity. At the wrong price, 126% price ($2.06T) as of value ($1.64T), there is no good time to buy. But at the right price, I would buy shares of Aramco in any setting or at any time.
+
+References:
+https://rpubs.com/rafael_nicolas/aramco
+https://www.aramco.com/en/investors/annual-report
+
+*The $121bn in profits is bigger than Meta $39bn, Amazon $30.4bn Nvidia, $29.8bn, Tesla $15bn combined.
+
+Source: https://www.linkedin.com/posts/rnfc_aramco-valuation-june-2024-activity-7203234981505089536-ko1P

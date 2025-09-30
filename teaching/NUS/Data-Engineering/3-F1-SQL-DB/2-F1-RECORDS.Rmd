@@ -1,0 +1,980 @@
+---
+title: "F1 Records with SQLite and dplyr"
+author: "Nico"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: true
+      smooth_scroll: true
+    number_sections: true
+    code_folding: show 
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+
+rm(list = ls())
+graphics.off()
+
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(
+  collapse=TRUE,
+  comment="",
+  message=FALSE,
+  warning=FALSE,
+  cache=FALSE,
+  fig.align = "center"
+)
+
+options(scipen = 1, digits = 3) #set to two decimal 
+
+
+format.dt.f = function(
+  df, 
+  page_length = 10,
+  perc_vars=NA,
+  ron_vars=NA,
+  ron_digits=2
+){
+  if( is.null(df) | purrr::is_empty(df) ){return()}
+  
+  double.two.int.f = function( df ){
+    get_no_digits = function(x){
+      if( ! is.numeric(x) ){return(NULL)}
+      x = x %% 1
+      x = as.character(x)
+      no_digits = nchar(x) - 2
+      no_digits = ifelse( no_digits == -1, 0, no_digits )
+      return(no_digits)
+    } 
+    suppressWarnings({
+      new_df = df %>%
+        as_tibble() %>%
+        mutate_if( function(x) max( get_no_digits(x), na.rm = T ) == 0, as.integer )
+    })
+    return(new_df)
+  }
+  df = double.two.int.f( df )
+  max_length = nrow(df)
+  page_length_menu = c(10,25,50,100, max_length, page_length) %>% unique()
+  page_length_menu = page_length_menu[ !page_length_menu > max_length]
+  
+  dt = DT::datatable(
+    df, 
+    extensions = c('Buttons', 'ColReorder', 'KeyTable', 'FixedColumns'), 
+    rownames = FALSE, 
+    options = list(
+      dom = 'Bflrtip', 
+      buttons = I( c('colvis','copy', 'excel') ), 
+      colReorder = TRUE, 
+      keys = TRUE, 
+      pageLength = page_length, 
+      lengthMenu = page_length_menu,
+      scrollX = TRUE,
+      scrollCollapse = TRUE
+    )
+  )
+  
+  if (!is.na(ron_vars)[1]) dt=dt %>% DT::formatRound( ron_vars, ron_digits )
+  if (!is.na(perc_vars)[1]) dt=dt %>% DT::formatPercentage( perc_vars, 2 )
+  
+  return(dt)
+}
+
+
+#----------------------------------------------------------------------------------------------------------
+# install.packages("DiagrammeR")
+# library(magrittr)
+library(dplyr)
+library(dm) # devtools::install_github("krlmlr/dm")
+#----------------------------------------------------------------------------------------------------------
+path_root="."
+path_libs=file.path(path_root, "libs")
+# library(f1db) # devtools::install_git("https://github.com/NilsDM/f1db.git")
+#-------------------------------------------------------------------
+f1db <- new.env() #rlang::new_environment() # 
+list.files(path = path_libs, pattern = "*.R") %>% 
+  file.path(path_libs, .) %>% 
+  # purrr::map(pryr::partial(source, local=f1db), encoding = 'UTF8') %>% 
+  purrr::map(source, local=f1db, encoding = 'UTF8') %>% 
+  invisible()
+
+nm <- ls(env=f1db)
+# fl <- purrr::map(nm, pryr::partial(get, envir=f1db)) %>% 
+fl <- purrr::map(nm, get, envir=f1db) %>% setNames(nm)
+fl %>% attach()
+
+# file.remove(file.path(path_root, "f1db-main.zip"))
+# file.remove(file.path(path_root, "f1_db.SQLite"))
+# unlink(file.path(path_root, "f1db_csv"), recursive = TRUE) 
+#----------------------------------------------------------------------------------------------------------
+
+# Download configure and connect Ergast files to SQLite database
+con <- f1db_connect()
+# remeber to call dbDisconnect() when finished working with a connection!
+
+# Database tables
+f1db_collect_tables(con)
+
+
+# db schema info
+# f1db_schema_info(con)
+
+# dbDisconnect(con)
+
+# Reconstructs all dplyr queries; then compares them with the SQL related queries
+# we will check if our dplyr output mathces using sql statement
+# Indeed, both outputs are equivalent. For each section, we will repeat this checking process.
+```
+
+# Race Records - Lap Times
+
+## Longest Racing Lap
+
+```{r}
+longest_racing_lap <- lap_times %>% 
+  left_join(races,   by = c("raceId" = "raceId")) %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  mutate(Longest_Lap = lap_times$time) %>%
+  select(forename,surname,nationality,name,date,Longest_Lap)%>%
+  arrange(desc(Longest_Lap)) %>%
+  head(10)
+
+
+all.equal( 
+  longest_racing_lap,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, name, date, lap_times.time AS Longest_Lap
+      FROM lap_times
+      LEFT JOIN races
+      ON lap_times.raceId = races.raceId
+      LEFT JOIN drivers
+      ON lap_times.driverId = drivers.driverId
+      ORDER BY Longest_Lap DESC
+      LIMIT 10"
+  ),
+  check.attributes=F
+) 
+```
+
+As the query illustrates, there have been `r sum(lubridate::ms(longest_racing_lap$longest_lap) > lubridate::ms("9:00.00"))` separate occasions where single laps have taken over $9$ minutes. Similarly, `r sum(lubridate::ms(longest_racing_lap$longest_lap) >= lubridate::ms("8:00.00") & 
+  lubridate::ms(longest_racing_lap$longest_lap) <= lubridate::ms("9:00.00"))` laps in **F1** history have taken between $8$ and $9$ minutes. There was no doubt a crash or some sort of reliability issue that precipitated each of these lengthy lap times.
+
+
+```{r}
+format.dt.f(longest_racing_lap)
+```
+
+
+```{r, echo=FALSE}
+rm(longest_racing_lap)
+```
+
+
+## Shortest Racing Lap
+
+The query below should use the *results* table instead of the *lapTimes* table in order to avoid including accidents/retirements (contained in the *lapTimes* table). Accidents/retirements are not complete laps and lead to artifically short laptimes.
+
+```{r}
+shortest_racing_lap <- results %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  mutate(Shortest_Lap=results$fastestLapTime) %>%
+  filter(!is.null(Shortest_Lap)) %>%
+  select(forename, surname, nationality, name, date, Shortest_Lap) %>%
+  arrange(Shortest_Lap) %>%
+  head(10)
+
+all.equal( 
+  shortest_racing_lap,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, name, date, fastestLapTime as Shortest_Lap
+      FROM results
+      LEFT JOIN races
+      ON results.raceId = races.raceId
+      LEFT JOIN drivers
+      ON results.driverId = drivers.driverId
+      WHERE fastestLapTime IS NOT NULL
+      ORDER BY Shortest_Lap
+      LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+
+format.dt.f(shortest_racing_lap)
+
+
+```
+
+From the above, it is clear that the `r shortest_racing_lap$name[1]` circuit is the shortest F1 circuit in F1 history.
+
+It is worth mentioning here that the clause <span style="color:blue">'WHERE fastestLapTime IS NOT NULL'</span> should be included to remove all of the race results **before** lap times were officially recorded in the *ergast* database (which only started in $2004$).
+
+
+```{r, echo=FALSE}
+rm(shortest_racing_lap)
+```
+
+## Fastest Lap At Each Circuit
+
+Note that laptime data is technically only available for $30$ of the $72$ circuits included in the circuits table. This is due to the fact that many of these circuits only hosted Grands Prix in the $1950s$, $1960s$, $1970s$, etc. - before lap times were recorded. The query below joins $4$ tables (`results`, `race`, `circuits`, and `drivers`) in order to return all of the information of interest.
+
+```{r}
+circuit_fastest_lap <- results %>%
+  left_join(races,    by = c("raceId" = "raceId")) %>%
+  left_join(circuits, by = c("circuitId" = "circuitId")) %>%
+  left_join(drivers,  by = c("driverId" = "driverId")) %>%
+  filter(!is.na(fastestLapTime)) %>%
+  mutate(Fastest_Lap=fastestLapTime, Circuit=name.y,Race=name.x) %>%
+  select(forename, surname, nationality, Fastest_Lap, Circuit, Race, year) %>%
+  group_by(Circuit) %>%
+  arrange(Fastest_Lap, by_group=TRUE) %>%
+  head(10)
+
+all.equal( 
+  circuit_fastest_lap,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, MIN(fastestLapTime) AS Fastest_Lap, circuits.name AS Circuit, 
+      races.name AS Race, year
+      FROM results
+      LEFT JOIN races
+      ON results.raceId = races.raceId
+      LEFT JOIN circuits
+      ON races.circuitId = circuits.circuitId
+      LEFT JOIN drivers
+      ON results.driverId = drivers.driverId
+      WHERE fastestLapTime IS NOT NULL
+      GROUP BY forename, surname, nationality, circuits.name, races.name, year
+      ORDER BY Fastest_Lap
+      LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+
+format.dt.f(circuit_fastest_lap)
+```
+
+
+```{r, eval=F, echo=F}
+circuit_fastest_lap <- results %>%
+  left_join(races,    by = c("raceId" = "raceId")) %>%
+  left_join(circuits, by = c("circuitId" = "circuitId")) %>%
+  left_join(drivers,  by = c("driverId" = "driverId")) %>%
+  filter(!is.na(fastestLapTime)) %>%
+  group_by(circuitId) %>%
+  mutate(fastest_lap = min(fastestLapTime)) %>%
+  ungroup() %>%
+  select(forename,
+         surname,
+         nationality,
+         fastest_lap,
+         circuit = name.y,
+         race = name.x,
+         year) %>%
+  slice_min(fastest_lap, n = 10, with_ties = F)
+
+all.equal( 
+  circuit_fastest_lap,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, MIN(fastestLapTime) OVER (PARTITION BY circuits.circuitId) AS Fastest_Lap,
+      circuits.name AS Circuit, races.name AS Race, year
+      FROM (SELECT DISTINCT * FROM results) results
+      LEFT JOIN (SELECT DISTINCT * FROM races) races
+      ON results.raceId = races.raceId
+      LEFT JOIN (SELECT DISTINCT * FROM circuits) circuits
+      ON races.circuitId = circuits.circuitId
+      LEFT JOIN (SELECT DISTINCT * FROM drivers) drivers
+      ON results.driverId = drivers.driverId
+      WHERE fastestLapTime IS NOT NULL
+      ORDER BY Fastest_Lap
+      LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+rm(circuit_fastest_lap)
+# format.dt.f(circuit_fastest_lap)
+```
+
+```{r, echo=FALSE}
+rm(circuit_fastest_lap)
+```
+
+# Race Records - Driver Results
+
+## Greatest Number of Race Entries
+
+These are the most prolific drivers in **F1**. They did not necessarily win the *most*, but they did win *enough* in order to have an **F1** seat for a long time.
+
+```{r}
+greatest_num_race_entries <- results %>% 
+  left_join(drivers, by="driverId") %>%
+  group_by(driverId,forename,surname,nationality) %>%
+  summarise(Total_Entries=n_distinct(raceId), .groups='drop') %>% 
+  #.groups='drop': All levels of grouping are dropped
+  # summarise() returns the grouping var as first column
+  ungroup() %>% #thus, have to ungroup() then deselect() the 'driverId' column
+  select(forename,surname,nationality, Total_Entries) %>%
+  slice_max(Total_Entries,n=10,with_ties = F) #replaces arrange(desc(Total_Entries)) %>% head(10)
+
+all.equal( 
+  greatest_num_race_entries,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, COUNT(DISTINCT results.raceID) AS Total_Entries
+      FROM results
+      LEFT JOIN drivers
+      ON results.driverId = drivers.driverId
+      GROUP BY forename, surname, nationality
+      ORDER BY Total_Entries DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+
+format.dt.f(greatest_num_race_entries)
+```
+
+
+```{r, echo=FALSE}
+rm(greatest_num_race_entries)
+```
+
+
+## Youngest Driver to Start a Race
+
+Calculating Age of first race by year, ignoring whether the driver's birthday has passed.
+
+```{r}
+# THANKS TO SHARMAINE
+youngest_driver_to_start1 <- results %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  group_by(driverId) %>%
+  slice_min(year(as.POSIXct(date,format="%Y-%m-%d")), n=1, with_ties = F) %>%
+  mutate(Age_At_First_Race=year(as.POSIXct(date,format="%Y-%m-%d"))-year(as.POSIXct(dob,format="%Y-%m-%d"))) %>%
+  ungroup() %>%
+  select(forename,surname,nationality, Age_At_First_Race, name,year,constructorId) %>%
+  slice_min(Age_At_First_Race, n=10, with_ties = F)
+
+all.equal( 
+  youngest_driver_to_start1,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+    MIN((date) - (dob)) AS age_at_first_race, name, year, constructorId
+    FROM results
+    JOIN drivers
+      ON results.driverId = drivers.driverId
+      AND dob IS NOT NULL
+    LEFT JOIN races
+    ON results.raceId = races.raceId
+    GROUP BY drivers.driverId
+    ORDER BY age_at_first_race
+    LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+```
+
+`MIN((date) - (dob))` is certainly not the only way to perform mathematical operations on dates - and having `age_at_first_race` in terms of days is probably not ideal - but it is syntactically simple and allows one to avoid manually-specifying a date/time format.We can also use the SQLite function [`MIN(julianday(date) - julianday(dob))`](https://sqlite.org/lang_datefunc.html) to parse the time strings <span style="color:red">*date*</span> (from *races* table) and <span style="color:red">*dob*</span> (from *drivers* table). `julianday` allows mathematical operations (in this case, subtraction) to be performed on dates. For example, calculating Age of first race by days, dividing it by $365$ then rounding it to nearest int
+
+```{r}
+youngest_driver_to_start2 <- results %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  mutate(
+    date_d = ymd(date), 
+    dob_d = ymd(dob),
+    # age_at_first_race = round(as.numeric((date_d - dob_d), units = "days")/365, 0)
+    # age_at_first_race = round((date_d - dob_d)/365, 0)
+    age_at_first_race = round(as.numeric(date_d - dob_d)/365, 0)
+    # age_at_first_race = as.numeric(date_d - dob_d)/365
+  ) %>%
+  # slice_min(age_at_first_race, n = 10, with_ties = F) %>%
+  group_by(driverId) %>%
+  slice(which.min(age_at_first_race)) %>%
+  ungroup() %>%
+  select(forename, surname, nationality, age_at_first_race, name, year, constructorId) %>%
+  # arrange(age_at_first_race) %>% head(10) %>% 
+  slice_min(age_at_first_race, n = 10, with_ties = F)
+
+all.equal( 
+  youngest_driver_to_start2,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+    MIN(ROUND((julianday(date) - julianday(dob))/365)) AS age_at_first_race, name, year, constructorId
+    FROM results
+    JOIN drivers
+      ON results.driverId = drivers.driverId
+      AND dob IS NOT NULL
+    LEFT JOIN races
+    ON results.raceId = races.raceId
+    GROUP BY drivers.driverId
+    ORDER BY age_at_first_race
+    LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+```
+
+<!--
+# setdiff(youngest_driver_to_start$forename, sql_youngest_driver_to_start$forename) # lando
+# setdiff(sql_youngest_driver_to_start$forename, youngest_driver_to_start$forename) # Ricardo
+
+Does not seem equal here because of the way dplyr and sql arrange ties. We can check if any row in one dataframe is missing from the other.
+
+format.dt.f(youngest_driver_to_start)
+
+Although it looks like a mismatch, this is reasonable as dplyr (above) and sql (below) orders ties and rounding age might be different.
+-->
+
+
+```{r}
+format.dt.f(youngest_driver_to_start1)
+```
+
+
+For those keeping score, `r paste0(youngest_driver_to_start1$forename[1], " ", youngest_driver_to_start1$surname[1])` was `r youngest_driver_to_start1$Age_At_First_Race[1]` years when he made his first start for `r constructors$constructorRef[youngest_driver_to_start1$constructorId[1]]` at the `r youngest_driver_to_start1$year[1]` `r youngest_driver_to_start1$name[1]`. He unfortunately [retired from the race on lap 32 with engine issues](https://en.wikipedia.org/wiki/2015_Australian_Grand_Prix).
+
+
+```{r, echo=FALSE}
+rm(youngest_driver_to_start1, youngest_driver_to_start2)
+```
+
+## Oldest Driver to Start a Race
+
+A similar query to the one above, only with a slight modification to the <span style="color:blue">ORDER BY</span> clause and the aggregation function (<span style="color:blue">MIN</span> becomes <span style="color:blue">MAX</span>):
+
+Calculating Age of first race by year, ignoring whether the driver's birthday has passed.
+
+```{r}
+# THANKS TO SHARMAINE
+oldest_driver_to_start1 <- results %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  group_by(driverId) %>%
+  slice_min(year(as.POSIXct(date,format="%Y-%m-%d")), n=1, with_ties = F) %>% #starting year
+  mutate(Age_At_First_Race=year(as.POSIXct(date,format="%Y-%m-%d"))-year(as.POSIXct(dob,format="%Y-%m-%d"))) %>% #calculate age at first race
+  ungroup() %>%
+  select(forename,surname,nationality, Age_At_First_Race, name,year) %>% 
+  slice_max(Age_At_First_Race, n=10, with_ties = F) #top 10 oldest drivers at first race
+
+all.equal( 
+  oldest_driver_to_start1,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+      MIN((date) - (dob)) AS Age_At_First_Race, name, year
+      FROM results
+      JOIN drivers
+        ON results.driverId = drivers.driverId
+        AND dob IS NOT NULL
+      LEFT JOIN races
+      ON results.raceId = races.raceId
+      GROUP BY drivers.driverId
+      ORDER BY Age_At_First_Race DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+) 
+```
+
+Calculating Age of first race by days, dividing it by $365$ then rounding it to nearest int
+
+```{r}
+oldest_driver_to_start2 <- results %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  mutate(
+    date_d = ymd(date), 
+    dob_d = ymd(dob),
+    # age_at_first_race = round(as.numeric((date_d - dob_d), units = "days")/365, 0)
+    # age_at_first_race = round((date_d - dob_d)/365, 0)
+    age_at_first_race = round(as.numeric(date_d - dob_d)/365, 0)
+    # age_at_first_race = as.numeric(date_d - dob_d)/365
+  ) %>%
+  # slice_min(age_at_first_race, n = 10, with_ties = F) %>%
+  group_by(driverId) %>%
+  slice(which.min(age_at_first_race)) %>%
+  ungroup() %>%
+  select(forename, surname, nationality, age_at_first_race, name, year) %>%
+  # arrange(age_at_first_race) %>% head(10) %>% 
+  slice_max(age_at_first_race, n = 10, with_ties = F)
+
+#edits based on prof's original SQL query & suggestions on using julianday()
+all.equal(
+  oldest_driver_to_start2,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+      MIN(ROUND((julianday(date) - julianday(dob))/365)) AS Age_At_First_Race, name, year
+      FROM results
+      JOIN drivers
+        ON results.driverId = drivers.driverId
+        AND dob IS NOT NULL
+      LEFT JOIN races
+      ON results.raceId = races.raceId
+      GROUP BY drivers.driverId
+      ORDER BY Age_At_First_Race DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+```
+
+```{r}
+format.dt.f(oldest_driver_to_start2)
+```
+
+`r paste0(oldest_driver_to_start1$forename[1], " ", oldest_driver_to_start1$surname[1])` was `r oldest_driver_to_start1$Age_At_First_Race[1]` years when he last entered an F1 race - the `r oldest_driver_to_start1$year[1]` `r oldest_driver_to_start1$name[1]`.
+
+```{r, echo=FALSE}
+rm(oldest_driver_to_start1, oldest_driver_to_start2)
+```
+
+## Most Wins All-Time
+
+The following query filters only winning results (<span style="color:blue">WHERE position = 1</span>) for each driver (<span style="color:blue">GROUP BY drivers.driverId, forename, surname, nationality</span>). 
+
+This makes it easy to count the number of winning races - simply take <span style="color:blue">SUM(position)</span> - since a single win is coded as a $1$.
+
+```{r}
+most_wins_all_time=results %>%
+  # filter(!is.na(position)) %>%
+  mutate(position=as.integer(position)) %>%
+  filter(position == 1) %>%
+  group_by(driverId) %>%
+  summarise(race_wins = sum(position)) %>%
+  left_join(drivers, "driverId") %>%
+  select(forename, surname, nationality, race_wins) %>%
+  slice_max(race_wins, n = 10, with_ties = F)
+
+all.equal(
+  most_wins_all_time,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, SUM(position) AS Wins
+      FROM results
+      JOIN drivers
+      ON results.driverId = drivers.driverId
+      WHERE position = 1
+      GROUP BY drivers.driverId, forename, surname, nationality
+      ORDER BY Wins DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(most_wins_all_time)
+```
+
+```{r, echo=FALSE}
+rm(most_wins_all_time)
+```
+
+We can provide bit more context to these results by also including the number of races a driver entered over their career. We do this be removing the <span style="color:blue">WHERE</span> clause and adding a <span style="color:blue">CASE</span> statement and another aggregating function (<span style="color:blue">COUNT(Distinct)</span>).
+
+
+```{r}
+race_wins_entries=results %>% # race_wins_entries
+  mutate(position=as.integer(position)) %>%
+  group_by(driverId) %>%
+  summarise(race_wins = sum(position == 1, na.rm = TRUE),
+            entries = n_distinct(raceId)) %>%
+  left_join(drivers, "driverId") %>%
+  select(forename, surname, nationality, race_wins, entries) %>%
+  slice_max(race_wins, n = 10, with_ties = F)
+
+all.equal(
+  race_wins_entries,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+      SUM(CASE position WHEN 1 THEN 1 ELSE 0 END) AS Wins,
+      COUNT(DISTINCT raceId) AS Entries
+      FROM results
+      JOIN drivers
+      ON results.driverId = drivers.driverId
+      GROUP BY drivers.driverId, forename, surname, nationality
+      ORDER BY Wins DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(race_wins_entries)
+```
+
+```{r, echo=FALSE}
+rm(race_wins_entries)
+```
+
+
+Lastly, it can be helpful to contextualize the results in terms of the **highest percentage of races won**. The subsequent query does just that:
+
+
+```{r}
+win_percentage=results %>% # win_percentage
+  mutate(position=as.integer(position)) %>%
+  group_by(driverId) %>%
+  summarise(wins = sum(position == 1, na.rm = TRUE),
+            entries = n_distinct(raceId), 
+            percentage=wins * 100.0/entries) %>%
+  left_join(drivers, "driverId")  %>%
+  select(forename, surname, nationality, wins, entries, percentage) %>%
+  slice_max(wins, n = 10, with_ties = F)
+
+all.equal(
+  win_percentage,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+      SUM(CASE position WHEN 1 THEN 1 ELSE 0 END) AS Wins,
+      COUNT(DISTINCT raceId) AS Entries,
+      (SUM(CASE position WHEN 1 THEN 1 ELSE 0 END))*100.0/ (SELECT COUNT(DISTINCT raceId)) AS Percentage
+    FROM results
+    JOIN drivers
+    ON results.driverId = drivers.driverId
+    GROUP BY drivers.driverId, forename, surname, nationality
+    ORDER BY Wins DESC
+    LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+
+format.dt.f(win_percentage %>% mutate(percentage=percentage/100), perc_vars="percentage")
+```
+
+The above query shows that the highest hit-rate (`r paste0(round(win_percentage$percentage[1], 2),"%")`) belongs to `r paste0(win_percentage$forename[1], " ", win_percentage$surname[1])`.
+
+```{r, echo=FALSE}
+rm(win_percentage)
+```
+
+
+## Most Wins At Same GP
+
+
+This query is conceptually similar to the previous one, it just uses a different aggregation function (<span style="color:blue">COUNT</span> rather than <span style = "color:blue">SUM</span>) and an additional grouping condition (<span style="color:blue">GROUP BY drivers.driverId, name</span>).
+
+```{r}
+most_win_same_gp=results %>% # most_win_same_gp
+  mutate(position=as.integer(position)) %>%
+  filter(position==1) %>% 
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  group_by(driverId,name) %>% 
+  summarize(wins = n(), .groups = 'keep') %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  ungroup() %>%
+  select(forename, surname, nationality, name, wins) %>%
+  slice_max(wins, n=10, with_ties = F)
+
+all.equal(
+  most_win_same_gp,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, name, COUNT(*) AS Wins
+      FROM results
+      LEFT JOIN races
+      ON results.raceId = races.raceId
+      LEFT JOIN drivers
+      ON results.driverId = drivers.driverId
+      WHERE position = 1
+      GROUP BY drivers.driverId, name
+      ORDER BY Wins DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(most_win_same_gp)
+```
+
+```{r, echo=FALSE}
+rm(most_win_same_gp)
+```
+
+
+## Most Wins In a Single Season
+
+This query makes use of a new table - <span style="color:red">*driver_standings*</span> - which contains a very convenient field 'wins':
+
+```
+SELECT *
+FROM driver_standings
+LIMIT 10;
+```
+
+This field keeps a running total of the number of wins a driver (*driverId* = '...') earned during a race season. This query, then, simply groups the data first by driver and then by year (<span style="color:blue">GROUP BY drivers.driverId, year</span>) and returns the greatest number of wins (<span style="color:blue">MAX(wins)</span>) that occured in that year.
+
+```{r}
+most_wins_single_season=driver_standings %>% # most_wins_single_season
+  left_join(races,   by = c("raceId" = "raceId")) %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  group_by(driverId, year) %>% 
+  slice(which.max(wins)) %>%
+  ungroup() %>% 
+  select(forename, surname, nationality, year, wins) %>% 
+  # with_ties = F gives first n rows in desc order. 
+  # T will return more rows than requested.
+  slice_max(wins,n=10, with_ties = F) #%>%
+  #arrange(desc(wins), surname)
+
+all.equal(
+  most_wins_single_season,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality, year, MAX(wins) AS Wins
+      FROM driver_standings
+      LEFT JOIN drivers
+      ON driver_standings.driverId = drivers.driverId
+      LEFT JOIN races
+      ON driver_standings.raceId = races.raceId
+      GROUP BY drivers.driverId, year
+      ORDER BY Wins DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(most_wins_single_season)
+```
+
+```{r, echo=FALSE}
+rm(most_wins_single_season)
+```
+
+## Most Podiums All-Time
+
+In addition to examining wins, it is also interesting to derive podium (*i.e.* top $3$) finishes:
+
+```{r}
+most_podiums_all_time=results %>% # most_podiums_all_time
+  group_by(driverId) %>%
+  mutate(position = case_when((position == 1) ~ 1,
+                              (position == 2) ~ 1,
+                              (position == 3) ~ 1,
+                              TRUE ~ 0)
+  ) %>% 
+  summarise(podiums = sum(position),
+            entries = n_distinct(raceId),
+            percentage = podiums * 100.0/entries) %>%
+  left_join(drivers, by = c("driverId" = "driverId")) %>%
+  select(forename, surname, nationality, podiums, entries, percentage) %>%
+  slice_max(podiums, n = 10, with_ties = F)
+
+all.equal(
+  most_podiums_all_time,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT forename, surname, nationality,
+       SUM(CASE position
+           WHEN 1 THEN 1
+           WHEN 2 THEN 1
+           WHEN 3 THEN 1
+           ELSE 0
+           END) AS Podiums,
+        COUNT(DISTINCT raceId) AS Entries,
+        SUM(CASE position WHEN 1 THEN 1 WHEN 2 THEN 1 WHEN 3 THEN 1 ELSE 0 END)*100.0/
+            COUNT(DISTINCT raceId) AS Percentage
+        FROM results
+        LEFT JOIN drivers
+        ON results.driverId = drivers.driverId
+        GROUP BY drivers.driverId
+        ORDER BY Podiums DESC
+        LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(most_podiums_all_time %>% mutate(percentage=percentage/100), perc_vars="percentage")
+```
+
+
+The query above uses a <span style="color:blue">CASE</span> statement to record any $1$, $2$, or $3$ position as `1`. The <span style="color:blue">SUM</span> of this then becomes `Podiums`. As in previous queries, total entries and percentage of podium finishes are calculated as well.
+
+
+```{r, echo=FALSE}
+rm(most_podiums_all_time)
+```
+
+
+# Race Records - Constructor Records
+
+
+These records will make use of $2$ new tables: <span style="color:red">*constructors*</span> and <span style="color:red">*constructor_standings*</span>:
+
+```
+SELECT *
+FROM constructors
+LIMIT 10;
+```
+
+```
+SELECT *
+FROM constructor_standings
+LIMIT 10;
+```
+
+## Most Winning Constructor
+
+```{r}
+most_winning_constructor=results %>% # most_winning_constructor
+  mutate(position=as.integer(position)) %>%
+  filter(position==1) %>%
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  group_by(constructorId) %>%
+  summarise(first_win = min(year),
+            last_win = max(year),
+            wins = sum(position)) %>%
+  left_join(constructors, by = c("constructorId" = "constructorId")) %>%
+  select(name, first_win, last_win, wins) %>%
+  slice_max(wins, n=10, with_ties = F)
+
+all.equal(
+  most_winning_constructor,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT constructors.name, MIN(year) AS First_Win, MAX(year) AS Last_Win,
+      SUM(position) AS Wins
+      FROM results
+      LEFT JOIN constructors
+      ON results.constructorId = constructors.constructorId
+      LEFT JOIN races
+      ON results.raceId = races.raceId
+      WHERE position = 1
+      GROUP BY results.constructorId
+      ORDER BY Wins DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(most_winning_constructor)
+
+```
+
+`r most_winning_constructor$name[1]`, perhaps unsurprisingly, has the most wins in F1 history by a wide margin.
+
+
+```{r, echo=FALSE}
+rm(most_winning_constructor)
+```
+
+
+
+## Highest Percentage of Constructor Wins All-Time
+
+To avoid results skewed slightly towards teams with relatively few entries (Brawn, Kurtis Kraft, Epperly, Watson, *etc.*), we should probably filter out constructors with fewer than say, $100$, entries. This will be the first query requiring a <span style="color:blue">HAVING</span> clause.
+
+```{r}
+highest_pct_winning_constructor_all_time=results %>% # highest_pct_winning_constructor_all_time
+  mutate(position=as.integer(position)) %>%
+  group_by(constructorId) %>%
+  summarise(wins = sum(position == 1, na.rm = TRUE),
+            entries = n_distinct(raceId), 
+            percentage = wins * 100.0/entries) %>%
+  left_join(constructors, by = c("constructorId" = "constructorId")) %>% 
+  select(name, wins, entries, percentage) %>%
+  filter(entries >= 100) %>%
+  arrange(desc(percentage)) %>%
+  head(10)
+
+all.equal(
+  highest_pct_winning_constructor_all_time,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT name, SUM(CASE position WHEN 1 THEN 1 ELSE 0 END) AS Wins,
+      COUNT(DISTINCT raceId) AS Entries,
+      (SUM(CASE position WHEN 1 THEN 1 ELSE 0 END))*100.0 / 
+        (COUNT(DISTINCT raceId)) AS Percentage
+      FROM results
+      LEFT JOIN constructors
+      ON results.constructorId = constructors.constructorId
+      GROUP BY results.constructorId
+      HAVING Entries > 100
+      ORDER BY Percentage DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(highest_pct_winning_constructor_all_time %>% mutate(percentage=percentage/100), perc_vars="percentage")
+
+```
+
+Overall, it seems that `r highest_pct_winning_constructor_all_time$name[1]`, followed by `r highest_pct_winning_constructor_all_time$name[2]` and `r highest_pct_winning_constructor_all_time$name[3]` have the highest win-percentages. But what about in a single season?
+
+```{r, echo=FALSE}
+rm(highest_pct_winning_constructor_all_time)
+```
+
+## Highest Percentage of Constructor Wins In a Season
+
+```{r}
+highest_pct_constructor_win_per_season=constructor_standings %>% # highest_pct_constructor_win_per_season
+  left_join(races, by = c("raceId" = "raceId")) %>%
+  left_join(constructors, by = c("constructorId" = "constructorId")) %>%
+  group_by(year, name.y) %>% 
+  summarise(Wins = max(wins),
+            Races = n_distinct(raceId), 
+            Percentage = Wins * 100.0/Races,
+  ) %>%
+  select(name=name.y, year, Wins, Races, Percentage) %>%
+  arrange(desc(Percentage), year)%>% 
+  head(10)
+
+all.equal(
+  highest_pct_constructor_win_per_season,
+  dbGetQuery(
+    conn = con,
+    statement = "SELECT constructors.name, year, MAX(wins) AS Wins, 
+      COUNT(DISTINCT constructor_standings.raceId) AS Races,
+      MAX(wins)*100.0/COUNT(DISTINCT constructor_standings.raceId) AS Percentage
+      FROM constructor_standings
+      LEFT JOIN races
+      ON constructor_standings.raceId = races.raceID
+      LEFT JOIN constructors
+      ON constructor_standings.constructorId=constructors.constructorId
+      GROUP BY year, constructors.name
+      ORDER BY Percentage DESC
+      LIMIT 10;"
+  ),
+  check.attributes=F
+)
+
+format.dt.f(highest_pct_constructor_win_per_season %>% mutate(Percentage=Percentage/100), perc_vars="Percentage")
+```
+
+Here we see that `r highest_pct_constructor_win_per_season$name[1]`'s `r highest_pct_constructor_win_per_season$year[1]` campaign was (arguably) the most dominant single-season peformance by a constructor, with the team winning `r paste0(round(highest_pct_constructor_win_per_season$Percentage[1], 2),"%")` of the races that year.
+
+```{r, echo=FALSE}
+rm(highest_pct_constructor_win_per_season)
+```
+
+```{r, echo=FALSE, include=FALSE}
+dbDisconnect(con)
+fl %>% detach()
+rm(fl, nm)
+# file.remove(file.path(path_root, "f1db-main.zip"))
+file.remove(file.path(path_root, "f1_db.SQLite"))
+unlink(file.path(path_root, "f1db_csv"), recursive = TRUE) 
+
+rm(circuits, constructor_results, constructor_standings, constructors)
+rm(current_drivers, driver_standings, drivers, lap_times, pit_stops)
+rm(qualifying, races, results, seasons, status)
+
+rm(con, dm_obj, f1db)
+rm(path_libs, path_root)
+rm(format.dt.f)
+```
